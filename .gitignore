@@ -1,0 +1,10 @@
+.DS_Store
+.idea
+.vscode
+__pycache__/
+venv*
+*.pyc
+config.json
+nohup.out
+tmp
+*.db
