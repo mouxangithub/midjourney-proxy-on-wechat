@@ -17,13 +17,7 @@ from config import conf
 from plugins import *
 
 
-@plugins.register(
-    name="midjourney",
-    desire_priority=-1,
-    desc="一款AI绘画工具",
-    version="0.1",
-    author="mouxan",
-)
+@plugins.register(name="midjourney", desc="一款AI绘画工具", version="0.1", author="mouxan")
 class midjourney(Plugin):
     def __init__(self):
         super().__init__()
