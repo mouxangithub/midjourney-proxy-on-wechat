@@ -1,1 +1,1 @@
-from .midjourney import *
+from .mj_tool import *
