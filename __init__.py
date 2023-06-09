@@ -1,1 +1,1 @@
-from .mj_tool import *
+from .mjTool import *
