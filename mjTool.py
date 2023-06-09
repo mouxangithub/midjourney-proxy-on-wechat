@@ -7,8 +7,8 @@ from channel.chat_message import ChatMessage
 from common.log import logger
 from plugins import *
 
-@plugins.register(name="mj_tool", desc="一个AI绘画工具", desire_priority=-1, desc="a", version="0.1", author="mouxan")
-class mjTool(Plugin):
+@plugins.register(name="mjtool", desc="一个AI绘画工具", desire_priority=-1, desc="a", version="0.1", author="mouxan")
+class mjtool(Plugin):
     def __init__(self):
         super().__init__()
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
