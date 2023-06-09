@@ -22,8 +22,55 @@ class midjourney(Plugin):
     def __init__(self):
         super().__init__()
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-        logger.info("[MidJourney] inited")
-        
+        logger.info("[Hello] inited")
+
+    def on_handle_context(self, e_context: EventContext):
+        if e_context["context"].type not in [
+            ContextType.TEXT,
+            ContextType.JOIN_GROUP,
+            ContextType.PATPAT,
+        ]:
+            return
+
+        if e_context["context"].type == ContextType.JOIN_GROUP:
+            e_context["context"].type = ContextType.TEXT
+            msg: ChatMessage = e_context["context"]["msg"]
+            e_context["context"].content = f'请你随机使用一种风格说一句问候语来欢迎新用户"{msg.actual_user_nickname}"加入群聊。'
+            e_context.action = EventAction.CONTINUE  # 事件继续，交付给下个插件或默认逻辑
+            return
+
+        if e_context["context"].type == ContextType.PATPAT:
+            e_context["context"].type = ContextType.TEXT
+            msg: ChatMessage = e_context["context"]["msg"]
+            e_context["context"].content = f"请你随机使用一种风格介绍你自己，并告诉用户输入#help可以查看帮助信息。"
+            e_context.action = EventAction.CONTINUE  # 事件继续，交付给下个插件或默认逻辑
+            return
+
+        content = e_context["context"].content
+        logger.debug("[Hello] on_handle_context. content: %s" % content)
+        if content == "Hello":
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            msg: ChatMessage = e_context["context"]["msg"]
+            if e_context["context"]["isgroup"]:
+                reply.content = f"Hello, {msg.actual_user_nickname} from {msg.from_user_nickname}"
+            else:
+                reply.content = f"Hello, {msg.from_user_nickname}"
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
+
+        if content == "Hi":
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = "Hi"
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK  # 事件结束，进入默认处理逻辑，一般会覆写reply
+
+        if content == "End":
+            # 如果是文本消息"End"，将请求转换成"IMAGE_CREATE"，并将content设置为"The World"
+            e_context["context"].type = ContextType.IMAGE_CREATE
+            content = "The World"
+            e_context.action = EventAction.CONTINUE  # 事件继续，交付给下个插件或默认逻辑
 
     def get_help_text(self, **kwargs):
         help_text = "欢迎使用MJ机器人\n"
@@ -46,48 +93,3 @@ class midjourney(Plugin):
         help_text += f"5. --style 风格 (4a,4b,4c)v4可用 (expressive,cute)niji5可用\n"
         help_text += f"6. --s 风格化 1-1000 (625-60000)v3"
         return help_text
-
-    def on_handle_context(self, e_context: EventContext):
-        if e_context["context"].type not in [
-            ContextType.TEXT,
-            ContextType.IMAGE,
-        ]:
-            return
-        
-        content = e_context["context"].content
-        isgroup = e_context["context"].isgroup
-        msg: ChatMessage = e_context["context"]["msg"]
-        reply = Reply()
-        reply.type = ReplyType.TEXT
-        trigger_prefix = conf().get("plugin_trigger_prefix", "$")
-
-        if not content.startswith(f"{trigger_prefix}imagine") and not content.startswith(f"{trigger_prefix}up") :
-            e_context["reply"] = reply
-            e_context.action = EventAction.CONTINUE  # 事件结束，并跳过处理context的默认逻辑
-            return
-        logger.debug("[MidJourney] 内容: %s" % content)
-        # response = None
-        # # 调用mj绘画
-        # if content.startswith(f"{trigger_prefix}imagine"):
-        #     prompt = content[9:len(content)]
-        #     response = self.on_request("/submit/imagine", {
-        #         "state": msg.from_user_nickname,
-        #         "prompt": prompt
-        #     })
-        # else :
-        #     prompt = content[4:len(content)]
-        #     response = self.on_request("/submit/up", {
-        #         "state": msg.from_user_nickname,
-        #         "prompt": "up"
-        #     })
-
-        # if not response:
-        #     return
-        # if response.status_code == 22:
-        #     reply.content = f"⏰ {response.json()['description']}"
-        # elif not response.status_code == 1:
-        #     reply.content = f"❌ {response.json()['description']}"
-        # else:
-        #     reply.content = f"提交成功，正在绘制中，请稍后..."
-        e_context["reply"] = reply
-        e_context.action = EventAction.CONTINUE  # 事件结束，并跳过处理context的默认逻辑
