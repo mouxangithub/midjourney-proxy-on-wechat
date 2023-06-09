@@ -22,15 +22,7 @@ class midjourney(Plugin):
     def __init__(self):
         super().__init__()
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-        urls = ("/mj_notify", "plugins.midjourney.midjourney.Query")
-        app = web.application(urls, globals(), autoreload=False)
-        port = conf().get("mj_port", 80)
-        web.httpserver.runsimple(app.wsgifunc(), ("0.0.0.0", port))
-        self.http = sessions.BaseUrlSession(base_url=conf().get("mjProxyEndpoint", "http://mouxan.cn/mj"))
         logger.info("[MidJourney] inited")
-        hostname = socket.gethostname()
-        ip = socket.gethostbyname(hostname)
-        logger.info("[本机IP] ip")
         
 
     def get_help_text(self, **kwargs):
@@ -71,48 +63,31 @@ class midjourney(Plugin):
 
         if not content.startswith(f"{trigger_prefix}imagine") and not content.startswith(f"{trigger_prefix}up") :
             e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
+            e_context.action = EventAction.CONTINUE  # 事件结束，并跳过处理context的默认逻辑
             return
         logger.debug("[MidJourney] 内容: %s" % content)
-        response = None
-        # 调用mj绘画
-        if content.startswith(f"{trigger_prefix}imagine"):
-            prompt = content[9:len(content)]
-            response = self.on_request("/submit/imagine", {
-                "state": msg.from_user_nickname,
-                "prompt": prompt
-            })
-        else :
-            prompt = content[4:len(content)]
-            response = self.on_request("/submit/up", {
-                "state": msg.from_user_nickname,
-                "prompt": "up"
-            })
+        # response = None
+        # # 调用mj绘画
+        # if content.startswith(f"{trigger_prefix}imagine"):
+        #     prompt = content[9:len(content)]
+        #     response = self.on_request("/submit/imagine", {
+        #         "state": msg.from_user_nickname,
+        #         "prompt": prompt
+        #     })
+        # else :
+        #     prompt = content[4:len(content)]
+        #     response = self.on_request("/submit/up", {
+        #         "state": msg.from_user_nickname,
+        #         "prompt": "up"
+        #     })
 
-        if not response:
-            return
-        if response.status_code == 22:
-            reply.content = f"⏰ {response.json()['description']}"
-        elif not response.status_code == 1:
-            reply.content = f"❌ {response.json()['description']}"
-        else:
-            reply.content = f"提交成功，正在绘制中，请稍后..."
+        # if not response:
+        #     return
+        # if response.status_code == 22:
+        #     reply.content = f"⏰ {response.json()['description']}"
+        # elif not response.status_code == 1:
+        #     reply.content = f"❌ {response.json()['description']}"
+        # else:
+        #     reply.content = f"提交成功，正在绘制中，请稍后..."
         e_context["reply"] = reply
-        e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
-
-            
-    
-    def on_request(self, url, data):
-        response = self.http.post(url, data={**data, "notifyHook": conf().get("notifyHook", "http://localhost/mj_notify")})
-        logger.debug("[py_rq] response: %s" % response)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
-
-
-class Query:
-    def POST(self):
-        params = web.input()
-        logger.info("[wechat] receive params: {}".format(params))
-        return "success"
+        e_context.action = EventAction.CONTINUE  # 事件结束，并跳过处理context的默认逻辑
