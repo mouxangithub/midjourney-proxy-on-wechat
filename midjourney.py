@@ -18,13 +18,13 @@ from plugins import *
 
 
 @plugins.register(
-    name="mj",
+    name="midjourney",
     desire_priority=-1,
     desc="一款AI绘画工具",
     version="0.1",
     author="mouxan",
 )
-class mj(Plugin):
+class midjourney(Plugin):
     def __init__(self):
         super().__init__()
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
