@@ -8,9 +8,9 @@ import plugins
 from plugins import *
 
 @plugins.register(
-    name="midjourney",
+    name="MidJourney",
     desc="一款AI绘画工具",
-    version="0.2",
+    version="0.0.3",
     author="mouxan"
 )
 class MidJourney(Plugin):
