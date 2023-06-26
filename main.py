@@ -9,7 +9,7 @@ from .api import mj
 @plugins.register(
     name="midjourney",
     desc="一款AI绘画工具",
-    version="0.1",
+    version="0.2",
     author="mouxan"
 )
 class MidJourney(Plugin):
