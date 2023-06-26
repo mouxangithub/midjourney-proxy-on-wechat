@@ -35,6 +35,7 @@ class MidJourney(Plugin):
         
         if content.startswith("/mj") or content.startswith("/imagine") or content.startswith("/up"):
             query = content[3:].strip()
+            logger.info("[MJ] query={}".format(query))
             reply = None
             if content.startswith("/mj") or content.startswith("/imagine"):
                 status, msg, id = mj.imagine(query)
@@ -55,6 +56,7 @@ class MidJourney(Plugin):
 
         if content.startswith("/fetch"):
             query = content[6:].strip()
+            logger.info("[MJ] query={}".format(query))
             status, msg = mj.fetch(query)
             if status:
                 reply = Reply(ReplyType.TEXT, msg)
