@@ -10,6 +10,7 @@ import plugins
 from plugins import *
 
 def check_prefix(content, prefix_list):
+    logger.info("[MJ] content={} prefix_list={}".format(content, prefix_list))
     if not prefix_list:
         return None
     for prefix in prefix_list:
