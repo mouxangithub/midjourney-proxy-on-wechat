@@ -72,7 +72,7 @@ class MidJourney(Plugin):
 
         hprefix = check_prefix(content, help_prefix)
         logger.info("[MJ] hprefix={}".format(hprefix))
-        if hprefix:
+        if hprefix == True:
             reply = Reply(ReplyType.TEXT, mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
@@ -81,13 +81,12 @@ class MidJourney(Plugin):
         # 绘画逻辑
         iprefix, iq = check_prefix(content, imagine_prefix)
         logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
-        if iprefix or content.startswith("/up"):
-            query = iq
+        if iprefix == True or content.startswith("/up"):
             reply = None
-            if iprefix:
-                status, msg, id = mj.imagine(query)
+            if iprefix == True:
+                status, msg, id = mj.imagine(iq)
             else:
-                status, msg, id = mj.simpleChange(query)
+                status, msg, id = mj.simpleChange(content.replace("/up", "").strip())
             if status:
                 channel._send(Reply(ReplyType.INFO, msg), context)
                 status2, msgs, imageUrl = mj.get_f_img(id)
@@ -104,7 +103,7 @@ class MidJourney(Plugin):
         
         fprefix, fq = check_prefix(content, fetch_prefix)
         logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
-        if fprefix:
+        if fprefix == True:
             query = fq
             status, msg = mj.fetch(query)
             if status:
