@@ -14,6 +14,7 @@ def check_prefix(content, prefix_list):
     if not prefix_list:
         return False, None
     for prefix in prefix_list:
+        logger.info("[MJ] prefix={} content={} test={}".format(prefix, content, content.startswith(prefix)))
         if content == prefix:
             return True, None
         elif content.startswith(prefix):
@@ -23,7 +24,7 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.1",
+    version="1.0.2",
     author="mouxan"
 )
 class MidJourney(Plugin):
