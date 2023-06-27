@@ -12,19 +12,17 @@ from plugins import *
 def check_prefix(content, prefix_list):
     prefix_list = eval(prefix_list)
     if not prefix_list:
-        return False, None
+        return False
     for prefix in prefix_list:
         logger.info("[MJ] prefix={} content={} test={}".format(prefix, content, content.startswith(prefix)))
-        if content == prefix:
-            return True, None
-        elif content.startswith(prefix):
+        if content.startswith(prefix):
             return True, content.replace(prefix, "").strip()
-    return False, None
+    return False
 
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.2",
+    version="1.0.3",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -67,16 +65,15 @@ class MidJourney(Plugin):
         content = context.content
 
         hprefix = check_prefix(content, self.help_prefix)
+        iprefix, iq = check_prefix(content, self.imagine_prefix)
+        fprefix, fq = check_prefix(content, self.fetch_prefix)
         if hprefix == True:
             logger.info("[MJ] hprefix={}".format(hprefix))
             reply = Reply(ReplyType.TEXT, mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
             return
-        
-        # 绘画逻辑
-        iprefix, iq = check_prefix(content, self.imagine_prefix)
-        if iprefix == True or content.startswith("/up"):
+        elif iprefix == True or content.startswith("/up"):
             logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
             reply = None
             if iprefix == True:
@@ -84,6 +81,9 @@ class MidJourney(Plugin):
             else:
                 status, msg, id = mj.simpleChange(content.replace("/up", "").strip())
             if status:
+                e = e_context
+                e["reply"] = Reply(ReplyType.TEXT, "测试")
+                channel._handle(e)
                 channel._send(Reply(ReplyType.INFO, msg), context)
                 status2, msgs, imageUrl = mj.get_f_img(id)
                 if status2:
@@ -96,9 +96,7 @@ class MidJourney(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
             return
-        
-        fprefix, fq = check_prefix(content, self.fetch_prefix)
-        if fprefix == True:
+        elif fprefix == True:
             logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
             status, msg, imageUrl = mj.fetch(fq)
             reply = None
