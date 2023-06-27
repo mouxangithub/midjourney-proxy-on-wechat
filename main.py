@@ -103,10 +103,12 @@ class MidJourney(Plugin):
         fprefix, fq = check_prefix(content, fetch_prefix)
         logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
         if fprefix == True:
-            query = fq
-            status, msg = mj.fetch(query)
+            status, msg, imageUrl = mj.fetch(fq)
+            reply = None
             if status:
-                reply = Reply(ReplyType.TEXT, msg)
+                channel._send(Reply(ReplyType.TEXT, msg), context)
+                if imageUrl:
+                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
             else:
                 reply = Reply(ReplyType.ERROR, msg)
             e_context["reply"] = reply
@@ -195,8 +197,8 @@ class _mjApi:
             if finishTime:
                 msg += f"完成时间：{finishTime}\n"
             if res.json()['imageUrl']:
-                msg += f"图片地址：{res.json()['imageUrl']}\n"
-            return True, msg
+                return True, msg, res.json()['imageUrl']
+            return True, msg, None
         except Exception as e:
             return False, "查询失败"
     
