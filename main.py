@@ -22,7 +22,7 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.5",
+    version="1.0.6",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -67,7 +67,7 @@ class MidJourney(Plugin):
         hprefix = check_prefix(content, self.help_prefix)
         if hprefix == True:
             logger.info("[MJ] hprefix={}".format(hprefix))
-            reply = Reply(ReplyType.TEXT, mj.help_text())
+            reply = Reply(ReplyType.INFO, mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
             return
@@ -81,12 +81,10 @@ class MidJourney(Plugin):
             else:
                 status, msg, id = mj.simpleChange(content.replace("/up", "").strip())
             if status:
-                ry = channel._decorate_reply(context, Reply(ReplyType.INFO, "测试中，请稍后..."))
-                channel._send_reply(context, ry)
-                channel._send(Reply(ReplyType.INFO, msg), context)
+                self.sendMsg(channel, context, ReplyType.TEXT, msg)
                 status2, msgs, imageUrl = mj.get_f_img(id)
                 if status2:
-                    channel._send(Reply(ReplyType.TEXT, msgs), context)
+                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
                     reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                 else:
                     reply = Reply(ReplyType.ERROR, msgs)
@@ -102,7 +100,7 @@ class MidJourney(Plugin):
             status, msg, imageUrl = mj.fetch(fq)
             reply = None
             if status:
-                channel._send(Reply(ReplyType.TEXT, msg), context)
+                self.sendMsg(channel, context, ReplyType.TEXT, msg)
                 if imageUrl:
                     reply = Reply(ReplyType.IMAGE_URL, imageUrl)
             else:
@@ -117,6 +115,9 @@ class MidJourney(Plugin):
             return "这是一个AI绘画工具，只要输入想到的文字，通过人工智能产出相对应的图。"
         else:
             return _mjApi().help_text()
+    
+    def sendMsg(self, channel, context, types, msg):
+        return channel._send_reply(context, channel._decorate_reply(context, Reply(types, msg)))
 
 
 
