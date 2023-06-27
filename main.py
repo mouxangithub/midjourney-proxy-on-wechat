@@ -45,8 +45,9 @@ class MidJourney(Plugin):
             imagine_prefix = os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"])
             fetch_prefix = os.environ.get("fetch_prefix", ["/fetch"])
             hprefix = check_prefix("/mjhp", help_prefix)
+            hprefix2 = check_prefix("/mj cat", help_prefix)
             logger.info("[MJ] inited. mj_url={} mj_api_secret={} help_prefix={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, help_prefix, imagine_prefix, fetch_prefix))
-            logger.info("[MJ] hprefix={}".format(hprefix))
+            logger.info("[MJ] hprefix={} hprefix2={}".format(hprefix, hprefix2))
         except Exception as e:
             if isinstance(e, FileNotFoundError):
                 logger.warn(f"[MJ] init failed, config.json not found.")
