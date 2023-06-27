@@ -15,21 +15,19 @@ def check_prefix(content, prefix_list):
         return False, None
     for prefix in prefix_list:
         if content.startswith(prefix):
-            data = content.replace(prefix, "").strip()
-            logger.info("[MJ] prefix={} replace={}".format(prefix, data))
-            return True, data
+            return True, content.replace(prefix, "").strip()
     return False, None
 
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.0",
+    version="0.0.7",
     author="mouxan"
 )
 class MidJourney(Plugin):
     def __init__(self):
+        super().__init__()
         try:
-            super().__init__()
             # 不可与image_create_prefix重复，image_create_prefix优先级更高
             self.help_prefix = os.environ.get("help_prefix", ["/mjhp", "/mjhelp"])
             self.imagine_prefix = os.environ.get("imagine_prefix", ["/mj", "/imagine", "/img"])
@@ -56,15 +54,18 @@ class MidJourney(Plugin):
         content = context.content
 
         hprefix = check_prefix(content, self.help_prefix)
-        iprefix, iq = check_prefix(content, self.imagine_prefix)
-        fprefix, fq = check_prefix(content, self.fetch_prefix)
+        logger.info("[MJ] hprefix={}".format(hprefix))
         if hprefix == True:
-            channel._handle(Reply(ReplyType.TEXT, "测试数据"), context)
+            channel._handle(Reply(ReplyType.TEXT, "测试"), context)
             reply = Reply(ReplyType.TEXT, self.mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
             return
-        elif iprefix == True or content.startswith("/up"):
+        
+        # 绘画逻辑
+        iprefix, iq = check_prefix(content, self.imagine_prefix)
+        logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
+        if iprefix == True or content.startswith("/up"):
             if not self.mj_url:
                 reply = Reply(ReplyType.ERROR, "服务器环境变量未配置[mj_url]")
                 e_context["reply"] = reply
@@ -88,7 +89,10 @@ class MidJourney(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
             return
-        elif fprefix == True:
+        
+        fprefix, fq = check_prefix(content, self.fetch_prefix)
+        logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
+        if fprefix == True:
             if not self.mj_url:
                 reply = Reply(ReplyType.ERROR, "服务器环境变量未配置[mj_url]")
                 e_context["reply"] = reply
