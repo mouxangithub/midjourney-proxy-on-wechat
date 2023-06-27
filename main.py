@@ -12,7 +12,7 @@ from plugins import *
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="0.0.4",
+    version="0.0.5",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -47,7 +47,7 @@ class MidJourney(Plugin):
         ]:
             return
         if not self.mj_url:
-            logger.warn("[MJ] mj_url未配置。")
+            logger.info("[MJ] mj_url未配置。")
             return
         else:
             logger.info("[MJ] mj_url={} mj_api_secret={}".format(self.mj_url, self.mj_api_secret))
