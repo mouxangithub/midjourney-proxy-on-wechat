@@ -1,6 +1,8 @@
 # encoding:utf-8
 import time
 import requests
+import os
+import json
 from bridge.context import ContextType
 from bridge.reply import Reply, ReplyType
 from common.log import logger
@@ -16,16 +18,38 @@ from plugins import *
 class MidJourney(Plugin):
     def __init__(self):
         super().__init__()
-        self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-        logger.info("[MJ] inited")
+        if os.environ.get("mj_url", None):
+            self.mj_url = os.environ.get("mj_url")
+        if os.environ.get("mj_api_secret", None):
+            self.mj_api_secret = os.environ.get("mj_api_secret")
+        try:
+            if not self.mj_url or not self.mj_api_secret:
+                curdir = os.path.dirname(__file__)
+                config_path = os.path.join(curdir, "config.json")
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+                    if not self.mj_url:
+                        self.mj_url = config["mj_url"]
+                    if self.mj_url and not self.mj_api_secret:
+                        self.mj_api_secret = config["mj_api_secret"]
+            self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
+            logger.info("[MJ] inited")
+        except Exception as e:
+            if isinstance(e, FileNotFoundError):
+                logger.warn(f"[MJ] init failed, config.json not found.")
+            else:
+                logger.warn("[MJ] init failed." + str(e))
+            raise e
 
     def on_handle_context(self, e_context: EventContext):
         if e_context["context"].type not in [
             ContextType.TEXT,
         ]:
             return
-        
-        mj = _mjApi()
+        if not self.mj_url:
+            logger.warn("[MJ] mj_url未配置。")
+            return
+        mj = _mjApi(self.mj_url, self.mj_api_secret)
         channel = e_context['channel']
         context = e_context['context']
         content = context.content
@@ -68,19 +92,22 @@ class MidJourney(Plugin):
             e_context.action = EventAction.BREAK  # 事件结束，进入默认处理逻辑，一般会覆写reply
 
 
-    def get_help_text(self, **kwargs):
-        mj = _mjApi()
-        return mj.help_text()
+    def get_help_text(self, isadmin=False, isgroup=False, verbose=False,**kwargs):
+        if kwargs.get("verbose") != True:
+            return "这是一个AI绘画工具，只要输入想到的文字，通过人工智能产出相对应的图。"
+        else:
+            return _mjApi().help_text()
 
 
 
 class _mjApi():
-    def __init__(self):
-        self.baseUrl = "http://mj.mouxan.cn"
+    def __init__(self, mj_url, mj_api_secret):
+        self.baseUrl = mj_url
         self.headers = {
-            "mj-api-secret": "mouxan",
             "Content-Type": "application/json",
         }
+        if not self.mj_api_secret:
+            self.headers["mj-api-secret"] = mj_api_secret
     
     def imagine(self, text):
         try:
