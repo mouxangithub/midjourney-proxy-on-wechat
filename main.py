@@ -22,7 +22,7 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.8",
+    version="1.0.9",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -43,7 +43,7 @@ class MidJourney(Plugin):
                     if self.mj_url and not self.mj_api_secret:
                         self.mj_api_secret = config["mj_api_secret"]
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-            logger.info("[MJ] inited. mj_url={} mj_api_secret={} help_prefix={} imagine_prefix={}".format(self.mj_url, self.mj_api_secret, self.help_prefix, self.imagine_prefix))
+            logger.info("[MJ] inited. mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
         except Exception as e:
             if isinstance(e, FileNotFoundError):
                 logger.warn(f"[MJ] init failed, config.json not found.")
