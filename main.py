@@ -14,7 +14,6 @@ def check_prefix(content, prefix_list):
     if not prefix_list:
         return False, None
     for prefix in prefix_list:
-        logger.info("[MJ] hprefix={} prefix={}".format(content.startswith(prefix), prefix))
         if content.startswith(prefix):
             return True, content.replace(prefix, "").strip()
     return False, None
