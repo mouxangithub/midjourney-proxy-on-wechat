@@ -12,7 +12,7 @@ from plugins import *
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="0.0.5",
+    version="0.0.6",
     author="mouxan"
 )
 class MidJourney(Plugin):
