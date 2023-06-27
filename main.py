@@ -102,7 +102,7 @@ class MidJourney(Plugin):
 
 
 
-class _mjApi():
+class _mjApi:
     def __init__(self, mj_url, mj_api_secret):
         self.baseUrl = mj_url
         self.headers = {
