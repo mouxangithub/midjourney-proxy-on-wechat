@@ -21,7 +21,7 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="0.0.8",
+    version="1.0.0",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -55,17 +55,17 @@ class MidJourney(Plugin):
 
         hprefix = check_prefix(content, self.help_prefix)
         logger.info("[MJ] hprefix={}".format(hprefix))
+        iprefix, iq = check_prefix(content, self.imagine_prefix)
+        logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
+        fprefix, fq = check_prefix(content, self.fetch_prefix)
+        logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
         if hprefix == True:
             channel._handle(Reply(ReplyType.TEXT, "测试数据"), context)
             reply = Reply(ReplyType.TEXT, self.mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
             return
-        
-        # 绘画逻辑
-        iprefix, iq = check_prefix(content, self.imagine_prefix)
-        logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
-        if iprefix == True or content.startswith("/up"):
+        elif iprefix == True or content.startswith("/up"):
             if not self.mj_url:
                 reply = Reply(ReplyType.ERROR, "服务器环境变量未配置[mj_url]")
                 e_context["reply"] = reply
@@ -89,10 +89,7 @@ class MidJourney(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
             return
-        
-        fprefix, fq = check_prefix(content, self.fetch_prefix)
-        logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
-        if fprefix == True:
+        elif fprefix == True:
             if not self.mj_url:
                 reply = Reply(ReplyType.ERROR, "服务器环境变量未配置[mj_url]")
                 e_context["reply"] = reply
