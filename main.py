@@ -13,10 +13,8 @@ def check_prefix(content, prefix_list):
     if not prefix_list:
         return None
     for prefix in prefix_list:
-        if content == prefix:
-            return prefix
-        elif content.startswith(prefix):
-            return prefix
+        if content.startswith(prefix):
+            return True, content.replace(prefix, "").strip()
     return None
 
 @plugins.register(
@@ -43,6 +41,7 @@ class MidJourney(Plugin):
                     if self.mj_url and not self.mj_api_secret:
                         self.mj_api_secret = config["mj_api_secret"]
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
+            
             logger.info("[MJ] inited. mj_url={} mj_api_secret={}".format(self.mj_url, self.mj_api_secret))
         except Exception as e:
             if isinstance(e, FileNotFoundError):
@@ -71,9 +70,9 @@ class MidJourney(Plugin):
             return
         
         # 绘画逻辑
-        iprefix = check_prefix(content, os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"]))
+        iprefix, iq = check_prefix(content, os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"]))
         if iprefix or content.startswith("/up"):
-            query = content[3:].strip()
+            query = iq
             logger.info("[MJ] query={}".format(query))
             reply = None
             if iprefix:
@@ -94,9 +93,9 @@ class MidJourney(Plugin):
             e_context.action = EventAction.BREAK_PASS
             return
         
-        fprefix = check_prefix(content, os.environ.get("fetch_prefix", ["/fetch"]))
+        fprefix, fq = check_prefix(content, os.environ.get("fetch_prefix", ["/fetch"]))
         if fprefix:
-            query = content[6:].strip()
+            query = fq
             logger.info("[MJ] query={}".format(query))
             status, msg = mj.fetch(query)
             if status:
