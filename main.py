@@ -22,7 +22,7 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.4",
+    version="1.0.5",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -81,9 +81,8 @@ class MidJourney(Plugin):
             else:
                 status, msg, id = mj.simpleChange(content.replace("/up", "").strip())
             if status:
-                e = e_context
-                e["reply"] = Reply(ReplyType.TEXT, "测试")
-                channel._handle(e)
+                ry = channel._decorate_reply(context, Reply(ReplyType.INFO, "测试中，请稍后..."))
+                channel._send_reply(context, ry)
                 channel._send(Reply(ReplyType.INFO, msg), context)
                 status2, msgs, imageUrl = mj.get_f_img(id)
                 if status2:
