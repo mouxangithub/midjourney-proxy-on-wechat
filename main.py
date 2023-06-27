@@ -9,6 +9,16 @@ from common.log import logger
 import plugins
 from plugins import *
 
+def check_prefix(content, prefix_list):
+    if not prefix_list:
+        return None
+    for prefix in prefix_list:
+        if content == prefix:
+            return prefix
+        elif content.startswith(prefix):
+            return prefix
+    return None
+
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
@@ -46,24 +56,27 @@ class MidJourney(Plugin):
             ContextType.TEXT,
         ]:
             return
-        if not self.mj_url:
-            logger.info("[MJ] mj_url未配置。")
-            return
+        
         mj = _mjApi(self.mj_url, self.mj_api_secret)
+
         channel = e_context['channel']
         context = e_context['context']
         content = context.content
 
-        if content.startswith("/mjhp") or content.startswith("/mjhelp") or content.startswith("/mj-help") or content.startswith("/mj_help") or content.startswith("/midjourneyhelp") or content.startswith("/midjourney-help") or content.startswith("/midjourney_help"):
+        hprefix = check_prefix(content, os.environ.get("help_prefix", ["/mjhp", "/mjhelp"]))
+        if hprefix:
             reply = Reply(ReplyType.TEXT, mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
+            return
         
-        if content.startswith("/mj") or content.startswith("/imagine") or content.startswith("/up"):
+        # 绘画逻辑
+        iprefix = check_prefix(content, os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"]))
+        if iprefix or content.startswith("/up"):
             query = content[3:].strip()
             logger.info("[MJ] query={}".format(query))
             reply = None
-            if content.startswith("/mj") or content.startswith("/imagine"):
+            if iprefix:
                 status, msg, id = mj.imagine(query)
             else:
                 status, msg, id = mj.simpleChange(query)
@@ -78,9 +91,11 @@ class MidJourney(Plugin):
             else:
                 reply = Reply(ReplyType.ERROR, msg)
             e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
-
-        if content.startswith("/fetch"):
+            e_context.action = EventAction.BREAK_PASS
+            return
+        
+        fprefix = check_prefix(content, os.environ.get("fetch_prefix", ["/fetch"]))
+        if fprefix:
             query = content[6:].strip()
             logger.info("[MJ] query={}".format(query))
             status, msg = mj.fetch(query)
@@ -89,7 +104,8 @@ class MidJourney(Plugin):
             else:
                 reply = Reply(ReplyType.ERROR, msg)
             e_context["reply"] = reply
-            e_context.action = EventAction.BREAK  # 事件结束，进入默认处理逻辑，一般会覆写reply
+            e_context.action = EventAction.BREAK_PASS
+            return
 
 
     def get_help_text(self, isadmin=False, isgroup=False, verbose=False,**kwargs):
