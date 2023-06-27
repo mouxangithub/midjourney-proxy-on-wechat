@@ -66,10 +66,10 @@ class MidJourney(Plugin):
         imagine_prefix = os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"])
         fetch_prefix = os.environ.get("fetch_prefix", ["/fetch"])
 
-        logger.info("[MJ] help_prefix={} imagine_prefix={} fetch_prefix={}".format(help_prefix,imagine_prefix,fetch_prefix))
+        logger.debug("[MJ] help_prefix={} imagine_prefix={} fetch_prefix={}".format(help_prefix,imagine_prefix,fetch_prefix))
 
         hprefix = check_prefix(content, help_prefix)
-        logger.info("[MJ] hprefix={}".format(hprefix))
+        logger.debug("[MJ] hprefix={}".format(hprefix))
         if hprefix:
             reply = Reply(ReplyType.TEXT, mj.help_text())
             e_context["reply"] = reply
@@ -78,7 +78,7 @@ class MidJourney(Plugin):
         
         # 绘画逻辑
         iprefix, iq = check_prefix(content, imagine_prefix)
-        logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
+        logger.debug("[MJ] iprefix={} iq={}".format(iprefix,iq))
         if iprefix or content.startswith("/up"):
             query = iq
             reply = None
@@ -101,7 +101,7 @@ class MidJourney(Plugin):
             return
         
         fprefix, fq = check_prefix(content, fetch_prefix)
-        logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
+        logger.debug("[MJ] fprefix={} fq={}".format(fprefix,fq))
         if fprefix:
             query = fq
             status, msg = mj.fetch(query)
