@@ -21,26 +21,34 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="0.0.7",
+    version="1.0.0",
     author="mouxan"
 )
 class MidJourney(Plugin):
     def __init__(self):
         super().__init__()
+        self.mj_url = os.environ.get("mj_url", None)
+        self.mj_api_secret = os.environ.get("mj_api_secret", None)
+        self.help_prefix = os.environ.get("help_prefix", "[\"/mjhp\", \"/mjhelp\", \"/mj-help\"]")
+        self.imagine_prefix = os.environ.get("imagine_prefix", "[\"/imagine\", \"/mj\", \"/img\"]")
+        self.fetch_prefix = os.environ.get("fetch_prefix", "[\"/fetch\", \"/ft\"]")
         try:
-            # 不可与image_create_prefix重复，image_create_prefix优先级更高
-            self.help_prefix = os.environ.get("help_prefix", ["/mjhp", "/mjhelp"])
-            self.imagine_prefix = os.environ.get("imagine_prefix", ["/mj", "/imagine", "/img"])
-            self.fetch_prefix = os.environ.get("fetch_prefix", ["/ft", "/fetch"])
-            self.mj_url = os.environ.get("mj_url", None)
-            mj_api_secret = os.environ.get("mj_api_secret", None)
-            if not self.mj_url:
-                logger.warn(f"[MJ] init failed, 未配置[mj_url].")
-            self.mj = _mjApi(self.mj_url, mj_api_secret)
+            if not self.mj_url or not self.mj_api_secret:
+                curdir = os.path.dirname(__file__)
+                config_path = os.path.join(curdir, "config.json")
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+                    if not self.mj_url:
+                        self.mj_url = config["mj_url"]
+                    if self.mj_url and not self.mj_api_secret:
+                        self.mj_api_secret = config["mj_api_secret"]
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-            logger.info("[MJ] inited. mj_url={} mj_api_secret={}".format(self.mj_url, self.mj_api_secret))
+            logger.info("[MJ] inited. mj_url={} mj_api_secret={} help_prefix={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.help_prefix, self.imagine_prefix, self.fetch_prefix))
         except Exception as e:
-            logger.warn("[MJ] init failed." + str(e))
+            if isinstance(e, FileNotFoundError):
+                logger.warn(f"[MJ] init failed, config.json not found.")
+            else:
+                logger.warn("[MJ] init failed." + str(e))
             raise e
 
     def on_handle_context(self, e_context: EventContext):
@@ -48,37 +56,33 @@ class MidJourney(Plugin):
             ContextType.TEXT,
         ]:
             return
+        
+        mj = _mjApi(self.mj_url, self.mj_api_secret)
 
         channel = e_context['channel']
         context = e_context['context']
         content = context.content
 
         hprefix = check_prefix(content, self.help_prefix)
-        logger.info("[MJ] hprefix={}".format(hprefix))
         if hprefix == True:
-            channel._handle(Reply(ReplyType.TEXT, "测试"), context)
-            reply = Reply(ReplyType.TEXT, self.mj.help_text())
+            logger.info("[MJ] hprefix={}".format(hprefix))
+            reply = Reply(ReplyType.TEXT, mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
             return
         
         # 绘画逻辑
         iprefix, iq = check_prefix(content, self.imagine_prefix)
-        logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
         if iprefix == True or content.startswith("/up"):
-            if not self.mj_url:
-                reply = Reply(ReplyType.ERROR, "服务器环境变量未配置[mj_url]")
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+            logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
             reply = None
             if iprefix == True:
-                status, msg, id = self.mj.imagine(iq)
+                status, msg, id = mj.imagine(iq)
             else:
-                status, msg, id = self.mj.simpleChange(content.replace("/up", "").strip())
+                status, msg, id = mj.simpleChange(content.replace("/up", "").strip())
             if status:
                 channel._send(Reply(ReplyType.INFO, msg), context)
-                status2, msgs, imageUrl = self.mj.get_f_img(id)
+                status2, msgs, imageUrl = mj.get_f_img(id)
                 if status2:
                     channel._send(Reply(ReplyType.TEXT, msgs), context)
                     reply = Reply(ReplyType.IMAGE_URL, imageUrl)
@@ -91,14 +95,9 @@ class MidJourney(Plugin):
             return
         
         fprefix, fq = check_prefix(content, self.fetch_prefix)
-        logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
         if fprefix == True:
-            if not self.mj_url:
-                reply = Reply(ReplyType.ERROR, "服务器环境变量未配置[mj_url]")
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
-            status, msg, imageUrl = self.mj.fetch(fq)
+            logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
+            status, msg, imageUrl = mj.fetch(fq)
             reply = None
             if status:
                 channel._send(Reply(ReplyType.TEXT, msg), context)
@@ -115,7 +114,9 @@ class MidJourney(Plugin):
         if kwargs.get("verbose") != True:
             return "这是一个AI绘画工具，只要输入想到的文字，通过人工智能产出相对应的图。"
         else:
-            return self.mj.help_text()
+            return _mjApi().help_text()
+
+
 
 class _mjApi:
     def __init__(self, mj_url, mj_api_secret):
