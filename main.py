@@ -15,7 +15,9 @@ def check_prefix(content, prefix_list):
         return False, None
     for prefix in prefix_list:
         if content.startswith(prefix):
-            return True, content.replace(prefix, "").strip()
+            data = content.replace(prefix, "").strip()
+            logger.info("[MJ] prefix={} replace={}".format(prefix, data))
+            return True, data
     return False, None
 
 @plugins.register(
@@ -54,11 +56,8 @@ class MidJourney(Plugin):
         content = context.content
 
         hprefix = check_prefix(content, self.help_prefix)
-        logger.info("[MJ] hprefix={}".format(hprefix))
         iprefix, iq = check_prefix(content, self.imagine_prefix)
-        logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
         fprefix, fq = check_prefix(content, self.fetch_prefix)
-        logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
         if hprefix == True:
             channel._handle(Reply(ReplyType.TEXT, "测试数据"), context)
             reply = Reply(ReplyType.TEXT, self.mj.help_text())
