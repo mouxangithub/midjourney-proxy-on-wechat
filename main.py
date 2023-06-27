@@ -22,7 +22,7 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.3",
+    version="1.0.4",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -65,15 +65,15 @@ class MidJourney(Plugin):
         content = context.content
 
         hprefix = check_prefix(content, self.help_prefix)
-        iprefix, iq = check_prefix(content, self.imagine_prefix)
-        fprefix, fq = check_prefix(content, self.fetch_prefix)
         if hprefix == True:
             logger.info("[MJ] hprefix={}".format(hprefix))
             reply = Reply(ReplyType.TEXT, mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
             return
-        elif iprefix == True or content.startswith("/up"):
+        
+        iprefix, iq = check_prefix(content, self.imagine_prefix)
+        if iprefix == True or content.startswith("/up"):
             logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
             reply = None
             if iprefix == True:
@@ -96,7 +96,9 @@ class MidJourney(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
             return
-        elif fprefix == True:
+        
+        fprefix, fq = check_prefix(content, self.fetch_prefix)
+        if fprefix == True:
             logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
             status, msg, imageUrl = mj.fetch(fq)
             reply = None
