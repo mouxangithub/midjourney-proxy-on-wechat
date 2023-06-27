@@ -13,6 +13,7 @@ def check_prefix(content, prefix_list):
     if not prefix_list:
         return None
     for prefix in prefix_list:
+        logger.info("[MJ] hprefix={} prefix={}".format(content.startswith(prefix), prefix))
         if content.startswith(prefix):
             return True, content.replace(prefix, "").strip()
     return None
@@ -44,10 +45,9 @@ class MidJourney(Plugin):
             help_prefix = os.environ.get("help_prefix", ["/mjhp", "/mjhelp"])
             imagine_prefix = os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"])
             fetch_prefix = os.environ.get("fetch_prefix", ["/fetch"])
-            hprefix = check_prefix("/mjhp", help_prefix)
             hprefix2 = check_prefix("/mj cat", help_prefix)
             logger.info("[MJ] inited. mj_url={} mj_api_secret={} help_prefix={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, help_prefix, imagine_prefix, fetch_prefix))
-            logger.info("[MJ] hprefix={} hprefix2={}, test={}".format(hprefix, hprefix2, "/mj cat".startswith("/mjhp")))
+            logger.info("[MJ] hprefix={}".format(hprefix2))
         except Exception as e:
             if isinstance(e, FileNotFoundError):
                 logger.warn(f"[MJ] init failed, config.json not found.")
