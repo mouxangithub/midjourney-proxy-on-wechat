@@ -62,7 +62,14 @@ class MidJourney(Plugin):
         context = e_context['context']
         content = context.content
 
-        hprefix = check_prefix(content, os.environ.get("help_prefix", ["/mjhp", "/mjhelp"]))
+        help_prefix = os.environ.get("help_prefix", ["/mjhp", "/mjhelp"])
+        imagine_prefix = os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"])
+        fetch_prefix = os.environ.get("fetch_prefix", ["/fetch"])
+
+        logger.info("[MJ] help_prefix={} imagine_prefix={} fetch_prefix={}".format(help_prefix,imagine_prefix,fetch_prefix))
+
+        hprefix = check_prefix(content, help_prefix)
+        logger.info("[MJ] hprefix={}".format(hprefix))
         if hprefix:
             reply = Reply(ReplyType.TEXT, mj.help_text())
             e_context["reply"] = reply
@@ -70,10 +77,10 @@ class MidJourney(Plugin):
             return
         
         # 绘画逻辑
-        iprefix, iq = check_prefix(content, os.environ.get("imagine_prefix", ["/imagine", "/mj", "/img"]))
+        iprefix, iq = check_prefix(content, imagine_prefix)
+        logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
         if iprefix or content.startswith("/up"):
             query = iq
-            logger.info("[MJ] query={}".format(query))
             reply = None
             if iprefix:
                 status, msg, id = mj.imagine(query)
@@ -93,10 +100,10 @@ class MidJourney(Plugin):
             e_context.action = EventAction.BREAK_PASS
             return
         
-        fprefix, fq = check_prefix(content, os.environ.get("fetch_prefix", ["/fetch"]))
+        fprefix, fq = check_prefix(content, fetch_prefix)
+        logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
         if fprefix:
             query = fq
-            logger.info("[MJ] query={}".format(query))
             status, msg = mj.fetch(query)
             if status:
                 reply = Reply(ReplyType.TEXT, msg)
