@@ -47,7 +47,7 @@ class MidJourney(Plugin):
             hprefix = check_prefix("/mjhp", help_prefix)
             hprefix2 = check_prefix("/mj cat", help_prefix)
             logger.info("[MJ] inited. mj_url={} mj_api_secret={} help_prefix={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, help_prefix, imagine_prefix, fetch_prefix))
-            logger.info("[MJ] hprefix={} hprefix2={}".format(hprefix, hprefix2))
+            logger.info("[MJ] hprefix={} hprefix2={}, test={}".format(hprefix, hprefix2, "/mj cat".startswith("/mjhp")))
         except Exception as e:
             if isinstance(e, FileNotFoundError):
                 logger.warn(f"[MJ] init failed, config.json not found.")
