@@ -12,7 +12,7 @@ from plugins import *
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="0.0.3",
+    version="0.0.4",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -49,6 +49,8 @@ class MidJourney(Plugin):
         if not self.mj_url:
             logger.warn("[MJ] mj_url未配置。")
             return
+        else:
+            logger.info("[MJ] mj_url={} mj_api_secret={}".format(self.mj_url, self.mj_api_secret))
         mj = _mjApi(self.mj_url, self.mj_api_secret)
         channel = e_context['channel']
         context = e_context['context']
@@ -106,7 +108,7 @@ class _mjApi():
         self.headers = {
             "Content-Type": "application/json",
         }
-        if not self.mj_api_secret:
+        if mj_api_secret:
             self.headers["mj-api-secret"] = mj_api_secret
     
     def imagine(self, text):
