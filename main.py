@@ -21,7 +21,7 @@ def check_prefix(content, prefix_list):
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="0.0.7",
+    version="0.0.8",
     author="mouxan"
 )
 class MidJourney(Plugin):
