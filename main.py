@@ -14,7 +14,9 @@ def check_prefix(content, prefix_list):
     if not prefix_list:
         return False, None
     for prefix in prefix_list:
-        if content.startswith(prefix):
+        if content == prefix:
+            return True, None
+        elif content.startswith(prefix):
             return True, content.replace(prefix, "").strip()
     return False, None
 
