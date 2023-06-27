@@ -12,17 +12,17 @@ from plugins import *
 def check_prefix(content, prefix_list):
     prefix_list = eval(prefix_list)
     if not prefix_list:
-        return False
+        return False, None
     for prefix in prefix_list:
         logger.info("[MJ] prefix={} content={} test={}".format(prefix, content, content.startswith(prefix)))
         if content.startswith(prefix):
             return True, content.replace(prefix, "").strip()
-    return False
+    return False, None
 
 @plugins.register(
     name="MidJourney",
     desc="一款AI绘画工具",
-    version="1.0.6",
+    version="1.0.7",
     author="mouxan"
 )
 class MidJourney(Plugin):
