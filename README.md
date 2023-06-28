@@ -18,6 +18,8 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 - [ ] midjourney `blend` 混图
 - [ ] midjourney `describe` 识图
 - [ ] 解决webp图片无法发送问题
+- [ ] 聊天窗口插件可通过指令修改mj_url地址等配置
+- [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
 
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
