@@ -22,7 +22,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.10",
+    version="1.0.11",
     author="mouxan",
     desire_priority=0
 )
@@ -52,15 +52,11 @@ class MidJourney(Plugin):
         elif os.path.exists(config_template_path):
             logger.info(f"使用的是插件目录下的config.json.template配置：{config_template_path}")
             with open(config_template_path, "r", encoding="utf-8") as f:
-                loaded_data = json.load(f)
-                loaded_data.update(gconf)
-                gconf = loaded_data
+                gconf = json.load(f)
         elif os.path.exists(config_path):
             logger.info(f"使用的是插件目录下的config.json配置：{config_path}")
             with open(config_path, "r", encoding="utf-8") as f:
-                loaded_data = json.load(f)
-                loaded_data.update(gconf)
-                gconf = loaded_data
+                gconf = json.load(f)
         else:
             logger.info("使用的是上方默认配置")
 
