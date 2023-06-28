@@ -40,7 +40,7 @@ fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键�
 }
 ```
 
-最后，根据[`插件安装方法`]([https://github.com/novicezk/midjourney-proxy](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#%E6%8F%92%E4%BB%B6%E5%AE%89%E8%A3%85%E6%96%B9%E6%B3%95)https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#%E6%8F%92%E4%BB%B6%E5%AE%89%E8%A3%85%E6%96%B9%E6%B3%95)进行安装
+最后，根据[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)进行安装
 
 进入聊天窗口，首先需要先开启管理员权限才能进行安装（如果本地未设密码就前往logs查看，有一个"因未设置口令，本次的临时口令为:xxxx"四位数即为你的临时密码，本地的话就可以直接在/plugins/godcm/config.json进行设置固定密码）
 然后在聊天窗口输入
@@ -53,4 +53,4 @@ fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键�
 ```
 然后输入/mjhp看看有没有发出说明，或者直接/mj + 描述出图
 
-详细教程在[`插件安装方法`]([https://github.com/novicezk/midjourney-proxy](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#%E6%8F%92%E4%BB%B6%E5%AE%89%E8%A3%85%E6%96%B9%E6%B3%95)https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#%E6%8F%92%E4%BB%B6%E5%AE%89%E8%A3%85%E6%96%B9%E6%B3%95)有说明
+详细教程在[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)有说明
