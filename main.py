@@ -21,35 +21,47 @@ def check_prefix(content, prefix_list):
 
 @plugins.register(
     name="MidJourney",
+    namecn="MJ绘画",
     desc="一款AI绘画工具",
     version="1.0.9",
-    author="mouxan"
+    author="mouxan",
+    desire_priority=0
 )
 class MidJourney(Plugin):
     def __init__(self):
         super().__init__()
-        self.mj_url = os.environ.get("mj_url", None)
-        self.mj_api_secret = os.environ.get("mj_api_secret", None)
-        self.imagine_prefix = os.environ.get("imagine_prefix", "[\"/imagine\", \"/mj\", \"/img\"]")
-        self.fetch_prefix = os.environ.get("fetch_prefix", "[\"/fetch\", \"/ft\"]")
-        try:
-            if not self.mj_url or not self.mj_api_secret:
-                curdir = os.path.dirname(__file__)
-                config_path = os.path.join(curdir, "config.json")
-                with open(config_path, "r", encoding="utf-8") as f:
-                    config = json.load(f)
-                    if not self.mj_url:
-                        self.mj_url = config["mj_url"]
-                    if self.mj_url and not self.mj_api_secret:
-                        self.mj_api_secret = config["mj_api_secret"]
-            self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-            logger.info("[MJ] inited. mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
-        except Exception as e:
-            if isinstance(e, FileNotFoundError):
-                logger.warn(f"[MJ] init failed, config.json not found.")
-            else:
-                logger.warn("[MJ] init failed." + str(e))
-            raise e
+
+        gconf = {
+            "mj_url": os.environ.get("mj_url", None),
+            "mj_api_secret": os.environ.get("mj_api_secret", None),
+            "imagine_prefix": os.environ.get("imagine_prefix", "[\"/imagine\", \"/mj\", \"/img\"]"),
+            "fetch_prefix": os.environ.get("fetch_prefix", "[\"/fetch\", \"/ft\"]")
+        }
+
+        # 读取和写入配置文件
+        curdir = os.path.dirname(__file__)
+        config_path = os.path.join(curdir, "config.json")
+        if not os.path.exists(config_path):
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(gconf, f, indent=4)
+        else:
+            with open(config_path, "r", encoding="utf-8") as f:
+                loaded_data = json.load(f)
+                loaded_data.update(gconf)
+                gconf = loaded_data
+                with open(config_path, "w", encoding="utf-8") as f:
+                    json.dump(gconf, f, indent=4)
+
+        if gconf["mj_url"] == "":
+            logger.info("[MJ] 未设置[mj_url]，请前往环境变量进行配置或在该插件目录下的config.json进行配置。")
+        
+        self.mj_url = gconf["mj_url"]
+        self.mj_api_secret = gconf["mj_api_secret"]
+        self.imagine_prefix = gconf["imagine_prefix"]
+        self.fetch_prefix = gconf["fetch_prefix"]
+
+        self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
+        logger.info("[MJ] inited. mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
 
     def on_handle_context(self, e_context: EventContext):
         if e_context["context"].type not in [
