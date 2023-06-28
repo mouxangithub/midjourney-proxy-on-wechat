@@ -31,7 +31,7 @@ fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键�
 ```
 如果是本地的话可以在该插件的目录下的json文件(/plugins/godcm/config.json)进行修改
 ```shell
-## /plugins/godcm/config.json
+## /plugins/midjourney/config.json
 {
     mj_url= "" // mj代理部署的地址，必填，没有肯定是出不了图啦
     mj_api_secret= "" // mj代理如若配置了mj.api-secret则此处同步，没有就不管
