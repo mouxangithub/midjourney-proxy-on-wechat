@@ -14,7 +14,6 @@ def check_prefix(content, prefix_list):
     if not prefix_list:
         return False, None
     for prefix in prefix_list:
-        logger.info("[MJ] prefix={} content={} test={}".format(prefix, content, content.startswith(prefix)))
         if content.startswith(prefix):
             return True, content.replace(prefix, "").strip()
     return False, None
@@ -23,7 +22,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.9",
+    version="1.0.10",
     author="mouxan",
     desire_priority=0
 )
@@ -32,25 +31,44 @@ class MidJourney(Plugin):
         super().__init__()
 
         gconf = {
-            "mj_url": os.environ.get("mj_url", None),
-            "mj_api_secret": os.environ.get("mj_api_secret", None),
-            "imagine_prefix": os.environ.get("imagine_prefix", "[\"/imagine\", \"/mj\", \"/img\"]"),
-            "fetch_prefix": os.environ.get("fetch_prefix", "[\"/fetch\", \"/ft\"]")
+            "mj_url": None,
+            "mj_api_secret": None,
+            "imagine_prefix": "[\"/imagine\", \"/mj\", \"/img\"]",
+            "fetch_prefix": "[\"/fetch\", \"/ft\"]"
         }
 
         # 读取和写入配置文件
         curdir = os.path.dirname(__file__)
+        logger.info(f"当前项目路径：{curdir}")
         config_path = os.path.join(curdir, "config.json")
-        if not os.path.exists(config_path):
-            with open(config_path, "w", encoding="utf-8") as f:
-                json.dump(gconf, f, indent=4)
-        else:
+        logger.info(f"当前项目config路径：{config_path}")
+        config_template_path = os.path.join(curdir, "config-template.json")
+        if os.environ.get("mj_url", None):
+            logger.info("使用的是环境变量配置")
+            gconf = {
+                "mj_url": os.environ.get("mj_url", None),
+                "mj_api_secret": os.environ.get("mj_api_secret", None),
+                "imagine_prefix": os.environ.get("imagine_prefix", "[\"/imagine\", \"/mj\", \"/img\"]"),
+                "fetch_prefix": os.environ.get("fetch_prefix", "[\"/fetch\", \"/ft\"]")
+            }
+        elif os.path.exists(config_template_path):
+            logger.info("使用的是插件目录下的config-template.json配置")
+            with open(config_template_path, "r", encoding="utf-8") as f:
+                loaded_data = json.load(f)
+                loaded_data.update(gconf)
+                gconf = loaded_data
+        elif os.path.exists(config_path):
+            logger.info("使用的是插件目录下的config.json配置")
             with open(config_path, "r", encoding="utf-8") as f:
                 loaded_data = json.load(f)
                 loaded_data.update(gconf)
                 gconf = loaded_data
-                with open(config_path, "w", encoding="utf-8") as f:
-                    json.dump(gconf, f, indent=4)
+        else:
+            logger.info("使用的是上方默认配置")
+
+        # 写入配置文件
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(gconf, f, indent=4)
 
         if gconf["mj_url"] == "":
             logger.info("[MJ] 未设置[mj_url]，请前往环境变量进行配置或在该插件目录下的config.json进行配置。")

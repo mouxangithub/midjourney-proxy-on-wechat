@@ -1,0 +1,6 @@
+{
+  mj_url= "",
+  mj_api_secret= "",
+  imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]",
+  fetch_prefix="[\"/fetch\", \"/ft\"]"
+}
