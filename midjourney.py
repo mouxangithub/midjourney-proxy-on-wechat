@@ -39,10 +39,8 @@ class MidJourney(Plugin):
 
         # 读取和写入配置文件
         curdir = os.path.dirname(__file__)
-        logger.info(f"当前项目路径：{curdir}")
         config_path = os.path.join(curdir, "config.json")
-        logger.info(f"当前项目config路径：{config_path}")
-        config_template_path = os.path.join(curdir, "config-template.json")
+        config_template_path = os.path.join(curdir, "config.json.template")
         if os.environ.get("mj_url", None):
             logger.info("使用的是环境变量配置")
             gconf = {
@@ -52,13 +50,13 @@ class MidJourney(Plugin):
                 "fetch_prefix": os.environ.get("fetch_prefix", "[\"/fetch\", \"/ft\"]")
             }
         elif os.path.exists(config_template_path):
-            logger.info("使用的是插件目录下的config-template.json配置")
+            logger.info(f"使用的是插件目录下的config.json.template配置：{config_template_path}")
             with open(config_template_path, "r", encoding="utf-8") as f:
                 loaded_data = json.load(f)
                 loaded_data.update(gconf)
                 gconf = loaded_data
         elif os.path.exists(config_path):
-            logger.info("使用的是插件目录下的config.json配置")
+            logger.info(f"使用的是插件目录下的config.json配置：{config_path}")
             with open(config_path, "r", encoding="utf-8") as f:
                 loaded_data = json.load(f)
                 loaded_data.update(gconf)
@@ -66,7 +64,7 @@ class MidJourney(Plugin):
         else:
             logger.info("使用的是上方默认配置")
 
-        # 写入配置文件
+        # 重新写入配置文件
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(gconf, f, indent=4)
 

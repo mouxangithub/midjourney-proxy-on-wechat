@@ -25,23 +25,24 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
 
-然后，如果是railway部署的，则在环境变量中加上
+然后，如果是railway或者docker部署的，可以在环境变量中加上
 ```shell
 mj_url= "" // mj代理部署的地址，必填，没有肯定是出不了图啦
 mj_api_secret= "" // mj代理如若配置了mj.api-secret则此处同步，没有就不管
 imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]" // 此处是触发imagine画图指令的前缀关键字
 fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键字
 ```
-如果是本地的话可以在该插件的目录下的json文件(/plugins/godcm/config.json)进行修改
+如果是本地的话可以在该插件的目录下的json文件进行修改，有些环境可能重启后会删除config.json，所以可以配置config.json.template，环境启动后会自动生成config.json
 ```shell
-## /plugins/midjourney/config.json
+## /plugins/midjourney/config.json或者/plugins/midjourney/config.json.template
 {
-    mj_url= "" // mj代理部署的地址，必填，没有肯定是出不了图啦
-    mj_api_secret= "" // mj代理如若配置了mj.api-secret则此处同步，没有就不管
-    imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]" // 此处是触发imagine画图指令的前缀关键字
+    mj_url= "", // mj代理部署的地址，必填，没有肯定是出不了图啦
+    mj_api_secret= "", // mj代理如若配置了mj.api-secret则此处同步，没有就不管
+    imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]", // 此处是触发imagine画图指令的前缀关键字
     fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键字
 }
 ```
+或者直接修改midjourney.py的源代码中的gconf默认配置，目前仅支持这三四种配置方式
 
 最后，根据[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)进行安装
 
