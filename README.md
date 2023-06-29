@@ -58,8 +58,6 @@ Tip: 该插件读取不到docker-compose.yml的环境变量，所以不用去doc
 
 ### railway部署
 
-(1) 如果是railway的，可以在环境变量中加上下方环境变量
-
 ```shell
 ## 第一步：前往Variables配置下方环境变量
 mj_url= ""
