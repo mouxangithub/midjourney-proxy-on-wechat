@@ -24,7 +24,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.15",
+    version="1.0.16",
     author="mouxan",
     desire_priority=0
 )
@@ -175,6 +175,7 @@ class MidJourney(Plugin):
             self.env_detection(e_context)
             logger.debug("[MJ] /fetch fprefix={} fq={}".format(fprefix,fq))
             status, msg, imageUrl = self.mj.fetch(fq)
+            logger.error(msg)
             if status:
                 if imageUrl:
                     self.sendMsg(channel, context, ReplyType.TEXT, msg)
@@ -279,6 +280,7 @@ class _mjApi:
                 return True, msg, res.json()['imageUrl']
             return True, msg, None
         except Exception as e:
+            logger.exception(e)
             return False, f"查询失败: {e}", None
     
     def describe(self, base64):
