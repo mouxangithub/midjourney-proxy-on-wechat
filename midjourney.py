@@ -11,6 +11,7 @@ from common.log import logger
 from plugins import *
 from PIL import Image
 from .mjapi import _mjApi
+from channel.chat_message import ChatMessage
 
 def check_prefix(content, prefix_list):
     if not prefix_list:
@@ -143,18 +144,20 @@ class MidJourney(Plugin):
         # 图片非群聊
         if ContextType.IMAGE == context.type and not context["isgroup"]:
             logger.debug(f"[MJ] 收到图片消息，开始处理 {content}")
-            self.env_detection(e_context)
-            base64_string = image_to_base64(content)
-            status, msg, imageUrl = self.mj.describe(base64_string)
-            if status2:
-                if imageUrl:
-                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                    reply_type, image_path = webp_to_png(imageUrl)
-                    reply = Reply(reply_type, image_path)
-                else:
-                    reply = Reply(ReplyType.TEXT, msgs)
-            else:
-                reply = Reply(ReplyType.ERROR, msgs)
+            curdir = os.path.dirname(content)
+            logger.debug(f"[MJ] 收到图片消息，开始处理 {curdir}")
+            # self.env_detection(e_context)
+            # base64_string = image_to_base64(content)
+            # status, msg, imageUrl = self.mj.describe(base64_string)
+            # if status2:
+            #     if imageUrl:
+            #         self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+            #         reply_type, image_path = webp_to_png(imageUrl)
+            #         reply = Reply(reply_type, image_path)
+            #     else:
+            #         reply = Reply(ReplyType.TEXT, msgs)
+            # else:
+            #     reply = Reply(ReplyType.ERROR, msgs)
             return
 
         if ContextType.TEXT == context.type:
