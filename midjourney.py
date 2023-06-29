@@ -20,20 +20,11 @@ def check_prefix(content, prefix_list):
             return True, content.replace(prefix, "").strip()
     return False, None
 
-# 定义指令集
-# COMMANDS = {
-#     "set_mj_url": {
-#         "alias": ["set_mj_url","设置mj_url","配置mj_url","设置mj地址","配置mj地址"],
-#         "args": ["mj_url"],
-#         "desc": "设置你的AI绘画私有mj_url",
-#     },
-# }
-
 @plugins.register(
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.14",
+    version="1.0.15",
     author="mouxan",
     desire_priority=0
 )
@@ -288,7 +279,7 @@ class _mjApi:
                 return True, msg, res.json()['imageUrl']
             return True, msg, None
         except Exception as e:
-            return False, "查询失败"
+            return False, f"查询失败: {e}", None
     
     def describe(self, base64):
         try:
