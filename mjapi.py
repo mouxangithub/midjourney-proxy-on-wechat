@@ -116,7 +116,7 @@ class _mjApi:
           url = self.baseUrl + f"/mj/task/{id}/fetch"
           status = ""
           rj = ""
-          while status != "SUCCESS":
+          while status != "SUCCESS" or status != "FAILURE":
               time.sleep(3)
               res = requests.get(url, headers=self.headers)
               rj = res.json()
@@ -125,32 +125,35 @@ class _mjApi:
           msg = ""
           startTime = ""
           finishTime = ""
-          if res.json()['startTime']:
-              startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['startTime']/1000))
-          if res.json()['finishTime']:
-              finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
-          if action == "IMAGINE":
-              msg = f"🎨 绘图成功\n"
-              msg += f"📨 ID: {id}\n"
-              msg += f"✨ 内容: {rj['prompt']}\n"
-              msg += f"✨ 内容(英文): {rj['promptEn']}\n"
-              msg += f"🪄 放大 U1～U4，变换 V1～V4\n"
-              msg += f"✏ 使用[{self.up_prefix[0]} 任务ID 操作]\n"
-              msg += f"{self.up_prefix[0]} {id} U1"
-          elif action == "UPSCALE":
-              msg = "🎨 放大成功\n"
-              msg += f"✨ {rj['description']}\n"
-          elif action == "VARIATION":
-              msg = "🎨 变换成功\n"
-              msg += f"✨ {rj['description']}\n"
-          elif action == "DESCRIBE":
-              msg = "🎨 转述成功\n"
-              msg += f"✨ 内容: {rj['prompt']}\n"
-              msg += f"✨ 内容(英文): {rj['promptEn']}\n"
-              msg += f"✨ 地址: {rj['imageUrl']}\n"
-          if rj["imageUrl"]:
-              return True, msg, rj["imageUrl"]
-          return True, msg, None
+          if status != "SUCCESS":
+              if res.json()['startTime']:
+                  startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['startTime']/1000))
+              if res.json()['finishTime']:
+                  finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
+              if action == "IMAGINE":
+                  msg = f"🎨 绘图成功\n"
+                  msg += f"📨 ID: {id}\n"
+                  msg += f"✨ 内容: {rj['prompt']}\n"
+                  msg += f"✨ 内容(英文): {rj['promptEn']}\n"
+                  msg += f"🪄 放大 U1～U4，变换 V1～V4\n"
+                  msg += f"✏ 使用[{self.up_prefix[0]} 任务ID 操作]\n"
+                  msg += f"{self.up_prefix[0]} {id} U1"
+              elif action == "UPSCALE":
+                  msg = "🎨 放大成功\n"
+                  msg += f"✨ {rj['description']}\n"
+              elif action == "VARIATION":
+                  msg = "🎨 变换成功\n"
+                  msg += f"✨ {rj['description']}\n"
+              elif action == "DESCRIBE":
+                  msg = "🎨 转述成功\n"
+                  msg += f"✨ 内容: {rj['prompt']}\n"
+                  msg += f"✨ 内容(英文): {rj['promptEn']}\n"
+                  msg += f"✨ 地址: {rj['imageUrl']}\n"
+              if rj["imageUrl"]:
+                  return True, msg, rj["imageUrl"]
+              return True, msg, None
+          else:
+            return False, f"请求失败：{res.json()['failReason']}", None
         except Exception as e:
             logger.exception(e)
             return False, "请求失败", None

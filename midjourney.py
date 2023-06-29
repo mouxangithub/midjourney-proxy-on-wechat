@@ -22,6 +22,8 @@ def check_prefix(content, prefix_list):
     return False, None
 
 def image_to_base64(image_path):
+    filename, extension = os.path.splitext(image_path)
+    t = extension[1:]
     with open(image_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read())
         return f"data:image/jpeg;base64,{encoded_string.decode('utf-8')}"
@@ -42,7 +44,7 @@ def webp_to_png(webp_path):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.25",
+    version="1.0.26",
     author="mouxan",
     desire_priority=0
 )
@@ -150,7 +152,7 @@ class MidJourney(Plugin):
             reply = None
             base64_string = image_to_base64(content)
             logger.debug(f"[MJ] 图片转base64：{base64_string}")
-            status, msg, imageUrl = self.mj.describe(base64_string)
+            status, msg, id = self.mj.describe(base64_string)
             if status:
                 self.sendMsg(channel, context, ReplyType.TEXT, msg)
                 status2, msgs, imageUrl = self.mj.get_f_img(id)
