@@ -23,7 +23,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.20",
+    version="1.0.21",
     author="mouxan",
     desire_priority=0
 )
@@ -200,7 +200,7 @@ class MidJourney(Plugin):
             status, msg, imageUrl = self.mj.fetch(fq)
             if status:
                 if imageUrl:
-                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                    self.sendMsg(channel, context, ReplyType.TEXT, msg)
                     if(".webp" in imageUrl):
                         response = requests.get(imageUrl)
                         image = Image.open(io.BytesIO(response.content))
