@@ -24,7 +24,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.18",
+    version="1.0.19",
     author="mouxan",
     desire_priority=0
 )
@@ -107,14 +107,7 @@ class MidJourney(Plugin):
         else:
             self.describe_prefix = eval(gconf["describe_prefix"])
         
-        self.mj = _mjApi(self.mj_url, self.mj_api_secret, {
-            "imagine_prefix": self.imagine_prefix,
-            "fetch_prefix": self.fetch_prefix,
-            "up_prefix": self.up_prefix,
-            "pad_prefix": self.pad_prefix,
-            "blend_prefix": self.blend_prefix,
-            "describe_prefix": self.describe_prefix
-        })
+        self.mj = _mjApi(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix, self.up_prefix, self.pad_prefix, self.blend_prefix, self.describe_prefix)
 
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
         logger.info("[MJ] inited. mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
@@ -216,20 +209,25 @@ class MidJourney(Plugin):
 
 
 class _mjApi:
-    def __init__(self, mj_url, mj_api_secret, prefix):
+    def __init__(self, mj_url, mj_api_secret, imagine_prefix, fetch_prefix, up_prefix, pad_prefix, blend_prefix, describe_prefix):
         self.baseUrl = mj_url
         self.headers = {
             "Content-Type": "application/json",
         }
         if mj_api_secret:
             self.headers["mj-api-secret"] = mj_api_secret
-        if prefix:
-            self.fetch_prefix = prefix.fetch_prefix
-            self.imagine_prefix = prefix.imagine_prefix
-            self.up_prefix = prefix.up_prefix
-            self.pad_prefix = prefix.pad_prefix
-            self.blend_prefix = prefix.blend_prefix
-            self.describe_prefix = prefix.describe_prefix
+        if imagine_prefix:
+            self.imagine_prefix = imagine_prefix
+        if fetch_prefix:
+            self.fetch_prefix = fetch_prefix
+        if up_prefix:
+            self.up_prefix = up_prefix
+        if pad_prefix:
+            self.pad_prefix = pad_prefix
+        if blend_prefix:
+            self.blend_prefix = blend_prefix
+        if describe_prefix:
+            self.describe_prefix = describe_prefix
     
     def imagine(self, text):
         try:
