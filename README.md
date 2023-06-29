@@ -36,13 +36,13 @@ fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键�
 ```shell
 ## /plugins/midjourney/config.json或者/plugins/midjourney/config.json.template
 {
-    mj_url= "", // mj代理部署的地址，必填，没有肯定是出不了图啦
-    mj_api_secret= "", // mj代理如若配置了mj.api-secret则此处同步，没有就不管
-    imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]", // 此处是触发imagine画图指令的前缀关键字
-    fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键字
+  "mj_url": "",
+  "mj_api_secret": "",
+  "imagine_prefix": "[\"/imagine\", \"/mj\", \"/img\"]",
+  "fetch_prefix": "[\"/fetch\", \"/ft\"]"
 }
 ```
-或者直接修改midjourney.py的源代码中的gconf默认配置，目前仅支持这三四种配置方式
+或者直接修改midjourney.py的源代码中的gconf默认配置，目前仅支持这三四种配置方式，读取优先级为：1.环境变量；2.config.json；3.config.json.template；4.midjourney.py的gconf
 
 最后，根据[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)进行安装
 
@@ -57,4 +57,4 @@ fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键�
 ```
 然后输入/mjhp看看有没有发出说明，或者直接/mj + 描述出图
 
-详细教程在[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)有说明
+详细教程在[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)和[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)有说明

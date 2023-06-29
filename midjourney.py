@@ -1,6 +1,9 @@
 # encoding:utf-8
 import time
 import requests
+import io
+from PIL import Image
+import re
 import os
 import json
 from bridge.context import ContextType
@@ -10,7 +13,6 @@ import plugins
 from plugins import *
 
 def check_prefix(content, prefix_list):
-    prefix_list = eval(prefix_list)
     if not prefix_list:
         return False, None
     for prefix in prefix_list:
@@ -18,11 +20,20 @@ def check_prefix(content, prefix_list):
             return True, content.replace(prefix, "").strip()
     return False, None
 
+# 定义指令集
+# COMMANDS = {
+#     "set_mj_url": {
+#         "alias": ["set_mj_url","设置mj_url","配置mj_url","设置mj地址","配置mj地址"],
+#         "args": ["mj_url"],
+#         "desc": "设置你的AI绘画私有mj_url",
+#     },
+# }
+
 @plugins.register(
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.12",
+    version="1.0.13",
     author="mouxan",
     desire_priority=0
 )
@@ -31,10 +42,14 @@ class MidJourney(Plugin):
         super().__init__()
 
         gconf = {
-            "mj_url": None,
-            "mj_api_secret": None,
-            "imagine_prefix": "[\"/imagine\", \"/mj\", \"/img\"]",
-            "fetch_prefix": "[\"/fetch\", \"/ft\"]"
+            "mj_url": "",
+            "mj_api_secret": "",
+            "imagine_prefix": "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]",
+            "fetch_prefix": "[\"/f\", \"/fetch\"]",
+            "up_prefix": "[\"/u\", \"/up\"]",
+            "pad_prefix": "[\"/p\", \"/pad\"]",
+            "blend_prefix": "[\"/b\", \"/blend\"]",
+            "describe_prefix": "[\"/d\", \"/describe\"]"
         }
 
         # 读取和写入配置文件
@@ -44,33 +59,64 @@ class MidJourney(Plugin):
         if os.environ.get("mj_url", None):
             logger.info("使用的是环境变量配置:mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
             gconf = {
-                "mj_url": os.environ.get("mj_url", None),
-                "mj_api_secret": os.environ.get("mj_api_secret", None),
-                "imagine_prefix": os.environ.get("imagine_prefix", "[\"/imagine\", \"/mj\", \"/img\"]"),
-                "fetch_prefix": os.environ.get("fetch_prefix", "[\"/fetch\", \"/ft\"]")
+                "mj_url": os.environ.get("mj_url", ""),
+                "mj_api_secret": os.environ.get("mj_api_secret", ""),
+                "imagine_prefix": os.environ.get("imagine_prefix", "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]"),
+                "fetch_prefix": os.environ.get("fetch_prefix", "[\"/f\", \"/fetch\"]"),
+                "up_prefix": os.environ.get("up_prefix", "[\"/u\", \"/up\"]"),
+                "pad_prefix": os.environ.get("pad_prefix", "[\"/p\", \"/pad\"]"),
+                "blend_prefix": os.environ.get("blend_prefix", "[\"/b\", \"/blend\"]"),
+                "describe_prefix": os.environ.get("describe_prefix", "[\"/d\", \"/describe\"]")
             }
         elif os.path.exists(config_path):
             logger.info(f"使用的是插件目录下的config.json配置：{config_path}")
             with open(config_path, "r", encoding="utf-8") as f:
-                gconf = json.load(f)
+                z = json.load(f)
+                gconf = {**gconf, **z}
         elif os.path.exists(config_template_path):
             logger.info(f"使用的是插件目录下的config.json.template配置：{config_template_path}")
             with open(config_template_path, "r", encoding="utf-8") as f:
-                gconf = json.load(f)
+                z = json.load(f)
+                gconf = {**gconf, **z}
         else:
-            logger.info("使用的是上方默认配置")
+            logger.info("使用的是默认配置")
+
+        if gconf["mj_url"] == "":
+            logger.info("[MJ] 未设置[mj_url]，请前往环境变量进行配置或在该插件目录下的config.json进行配置。")
 
         # 重新写入配置文件
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(gconf, f, indent=4)
-
-        if gconf["mj_url"] == "":
-            logger.info("[MJ] 未设置[mj_url]，请前往环境变量进行配置或在该插件目录下的config.json进行配置。")
         
         self.mj_url = gconf["mj_url"]
         self.mj_api_secret = gconf["mj_api_secret"]
-        self.imagine_prefix = gconf["imagine_prefix"]
-        self.fetch_prefix = gconf["fetch_prefix"]
+
+        if not gconf["imagine_prefix"]:
+            self.imagine_prefix = ["/mj", "/imagine", "/img"]
+        else:
+            self.imagine_prefix = eval(gconf["imagine_prefix"])
+        if not gconf["fetch_prefix"]:
+            self.fetch_prefix = ["/ft", "/fetch"]
+        else:
+            self.fetch_prefix = eval(gconf["fetch_prefix"])
+        if not gconf["up_prefix"]:
+            self.up_prefix = ["/u", "/up"]
+        else:
+            self.up_prefix = eval(gconf["up_prefix"])
+        if not gconf["pad_prefix"]:
+            self.pad_prefix = ["/p", "/pad"]
+        else:
+            self.pad_prefix = eval(gconf["pad_prefix"])
+        if not gconf["blend_prefix"]:
+            self.blend_prefix = ["/b", "/blend"]
+        else:
+            self.blend_prefix = eval(gconf["blend_prefix"])
+        if not gconf["describe_prefix"]:
+            self.describe_prefix = ["/d", "/describe"]
+        else:
+            self.describe_prefix = eval(gconf["describe_prefix"])
+        
+        self.mj = _mjApi(self.mj_url, self.mj_api_secret)
 
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
         logger.info("[MJ] inited. mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
@@ -80,33 +126,45 @@ class MidJourney(Plugin):
             ContextType.TEXT,
         ]:
             return
-        
-        mj = _mjApi(self.mj_url, self.mj_api_secret)
 
         channel = e_context['channel']
         context = e_context['context']
         content = context.content
 
+        # 判断是否是指令
+        iprefix, iq = check_prefix(content, self.imagine_prefix)
+        fprefix, fq = check_prefix(content, self.fetch_prefix)
+        uprefix, uq = check_prefix(content, self.up_prefix)
+        pprefix, pq = check_prefix(content, self.pad_prefix)
+        bprefix, bq = check_prefix(content, self.blend_prefix)
+        dprefix, dq = check_prefix(content, self.describe_prefix)
+
+        reply = None
         if content == "/mjhp" or content == "/mjhelp" or content == "/mj-help":
-            reply = Reply(ReplyType.INFO, mj.help_text())
+            self.env_detection(e_context)
+            reply = Reply(ReplyType.INFO, self.mj.help_text())
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
             return
-        
-        iprefix, iq = check_prefix(content, self.imagine_prefix)
-        if iprefix == True or content.startswith("/up"):
-            logger.info("[MJ] iprefix={} iq={}".format(iprefix,iq))
-            reply = None
-            if iprefix == True:
-                status, msg, id = mj.imagine(iq)
-            else:
-                status, msg, id = mj.simpleChange(content.replace("/up", "").strip())
+        elif iprefix == True:
+            self.env_detection(e_context)
+            logger.debug("[MJ] /imagine iprefix={} iq={}".format(iprefix,iq))
+            status, msg, id = self.mj.imagine(iq)
             if status:
                 self.sendMsg(channel, context, ReplyType.TEXT, msg)
-                status2, msgs, imageUrl = mj.get_f_img(id)
+                status2, msgs, imageUrl = self.mj.get_f_img(id)
                 if status2:
                     self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    # 判断是否是webp格式
+                    match = re.search(r".webp", imageUrl)
+                    if match:
+                        status3, msgss, img = self.mj.webp_convert_png(imageUrl)
+                        if status3:
+                            reply = Reply(ReplyType.IMAGE, img)
+                        else:
+                            reply = Reply(ReplyType.ERROR, msgss)
+                    else:
+                        reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                 else:
                     reply = Reply(ReplyType.ERROR, msgs)
             else:
@@ -114,28 +172,72 @@ class MidJourney(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
             return
-        
-        fprefix, fq = check_prefix(content, self.fetch_prefix)
-        if fprefix == True:
-            logger.info("[MJ] fprefix={} fq={}".format(fprefix,fq))
-            status, msg, imageUrl = mj.fetch(fq)
-            reply = None
+        elif uprefix == True:
+            self.env_detection(e_context)
+            logger.debug("[MJ] /up uprefix={} uq={}".format(iprefix,iq))
+            status, msg, id = self.mj.simpleChange(uq)
             if status:
                 self.sendMsg(channel, context, ReplyType.TEXT, msg)
-                if imageUrl:
-                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                status2, msgs, imageUrl = self.mj.get_f_img(id)
+                if status2:
+                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                    # 判断是否是webp格式
+                    match = re.search(r".webp", imageUrl)
+                    if match:
+                        status3, msgss, img = self.mj.webp_convert_png(imageUrl)
+                        if status3:
+                            reply = Reply(ReplyType.IMAGE, img)
+                        else:
+                            reply = Reply(ReplyType.ERROR, msgss)
+                    else:
+                        reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                else:
+                    reply = Reply(ReplyType.ERROR, msgs)
             else:
                 reply = Reply(ReplyType.ERROR, msg)
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
             return
-
+        elif fprefix == True:
+            self.env_detection(e_context)
+            logger.debug("[MJ] /fetch fprefix={} fq={}".format(fprefix,fq))
+            status, msg, imageUrl = self.mj.fetch(fq)
+            if status:
+                if imageUrl:
+                    self.sendMsg(channel, context, ReplyType.TEXT, msg)
+                    # 判断是否是webp格式
+                    match = re.search(r".webp", imageUrl)
+                    if match:
+                        status3, msgss, img = self.mj.webp_convert_png(imageUrl)
+                        if status3:
+                            reply = Reply(ReplyType.IMAGE, img)
+                        else:
+                            reply = Reply(ReplyType.ERROR, msgss)
+                    else:
+                        reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                else:
+                    reply = Reply(ReplyType.TEXT, msg)
+            else:
+                reply = Reply(ReplyType.ERROR, msg)
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
+            return
+        elif dprefix == True and not context["isgroup"]:
+            self.env_detection(e_context)
+            logger.debug("[MJ] /describe fprefix={} fq={}".format(fprefix,fq))
 
     def get_help_text(self, isadmin=False, isgroup=False, verbose=False,**kwargs):
         if kwargs.get("verbose") != True:
             return "这是一个AI绘画工具，只要输入想到的文字，通过人工智能产出相对应的图。"
         else:
-            return _mjApi().help_text()
+            return self.mj.help_text()
+    
+    def env_detection(self, e_context: EventContext):
+        if not self.mj_url:
+            reply = Reply(ReplyType.ERROR, "未设置[mj_url]，请前往环境变量进行配置或在该插件目录下的config.json进行配置。")
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
+            return
     
     def sendMsg(self, channel, context, types, msg):
         return channel._send_reply(context, channel._decorate_reply(context, Reply(types, msg)))
@@ -160,13 +262,13 @@ class _mjApi:
             if code == 1:
                 msg = "✅ 您的任务已提交\n"
                 msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 任务ID: {res.json()['result']}\n"
-                msg += f"🪄 查询进度\n"
+                msg += f"📨 ID: {res.json()['result']}\n"
+                msg += f"🪄 进度\n"
                 msg += f"✏  使用[/fetch + 任务ID操作]\n"
                 msg += f"/fetch {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
-                return False, res.json()["description"]
+                return False, res.json()["failReason"]
         except Exception as e:
             return False, "图片生成失败"
     
@@ -179,13 +281,13 @@ class _mjApi:
             if code == 1:
                 msg = "✅ 您的任务已提交\n"
                 msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 任务ID: {res.json()['result']}\n"
-                msg += f"🪄 查询进度\n"
+                msg += f"📨 ID: {res.json()['result']}\n"
+                msg += f"🪄 进度\n"
                 msg += f"✏  使用[/fetch + 任务ID操作]\n"
                 msg += f"/fetch {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
-                return False, res.json()["description"]
+                return False, res.json()["failReason"]
         except Exception as e:
             return False, "图片生成失败"
     
@@ -201,8 +303,8 @@ class _mjApi:
             if res.json()['finishTime']:
                 finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
             msg = "✅ 查询成功\n"
-            msg += f"任务ID: {res.json()['id']}\n"
-            msg += f"描述内容：{res.json()['prompt']}\n"
+            msg += f"ID: {res.json()['id']}\n"
+            msg += f"内容：{res.json()['prompt']}\n"
             msg += f"状态：{self.status(status)}\n"
             msg += f"进度：{res.json()['progress']}\n"
             if startTime:
@@ -214,6 +316,25 @@ class _mjApi:
             return True, msg, None
         except Exception as e:
             return False, "查询失败"
+    
+    def describe(self, base64):
+        try:
+            url = self.baseUrl + "/mj/submit/describe"
+            data = {"base64": base64}
+            res = requests.post(url, json=data, headers=self.headers)
+            code = res.json()["code"]
+            if code == 1:
+                msg = "✅ 您的任务已提交\n"
+                msg += f"🚀 正在快速处理中，请稍后\n"
+                msg += f"📨 ID: {res.json()['result']}\n"
+                msg += f"🪄 进度\n"
+                msg += f"✏  使用[/fetch + 任务ID操作]\n"
+                msg += f"/fetch {res.json()['result']}"
+                return True, msg, res.json()["result"]
+            else:
+                return False, res.json()["description"]
+        except Exception as e:
+            return False, "图片获取失败"
     
     def status(self, status):
         msg = ""
@@ -243,9 +364,8 @@ class _mjApi:
           msg = ""
           if action == "IMAGINE":
               msg = f"🎨 绘图成功\n"
+              msg += f"📨 ID: {id}\n"
               msg += f"✨ 内容: {rj['prompt']}\n"
-              msg += f"✨ 内容: {rj['prompt']}\n"
-              msg += f"📨 任务ID: {id}\n"
               msg += f"🪄 放大 U1～U4，变换 V1～V4\n"
               msg += f"✏ 使用[/up 任务ID 操作]\n"
               msg += f"/up {id} U1"
@@ -255,6 +375,17 @@ class _mjApi:
           return True, msg, rj["imageUrl"]
         except Exception as e:
             return False, "绘图失败"
+    
+    def webp_convert_png(self, webp):
+        try:
+            res = requests.get(webp)
+            # 将WebP图片转换为PIL Image对象
+            image = Image.open(io.BytesIO(res.content))
+            # 转换为PNG格式
+            image.save("image.png", "PNG")
+            return True, "图片获取成功", image
+        except Exception as e:
+            return False, "图片获取失败"
     
     def help_text(self):
         help_text = "欢迎使用MJ机器人\n"
