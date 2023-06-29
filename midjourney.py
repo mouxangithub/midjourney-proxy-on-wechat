@@ -42,7 +42,7 @@ def webp_to_png(webp_path):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.24",
+    version="1.0.25",
     author="mouxan",
     desire_priority=0
 )
@@ -139,23 +139,25 @@ class MidJourney(Plugin):
 
         channel = e_context['channel']
         context = e_context['context']
+        cmsg = context["msg"]
         content = context.content
 
         # 图片非群聊
         if ContextType.IMAGE == context.type and not context["isgroup"]:
+            self.env_detection(e_context)
+            cmsg.prepare()
             logger.debug(f"[MJ] 收到图片消息，开始处理 {content} {os.path.exists(content)}")
-            # self.env_detection(e_context)
-            # base64_string = image_to_base64(content)
-            # status, msg, imageUrl = self.mj.describe(base64_string)
-            # if status2:
-            #     if imageUrl:
-            #         self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-            #         reply_type, image_path = webp_to_png(imageUrl)
-            #         reply = Reply(reply_type, image_path)
-            #     else:
-            #         reply = Reply(ReplyType.TEXT, msgs)
-            # else:
-            #     reply = Reply(ReplyType.ERROR, msgs)
+            base64_string = image_to_base64(content)
+            status, msg, imageUrl = self.mj.describe(base64_string)
+            if status2:
+                if imageUrl:
+                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                    reply_type, image_path = webp_to_png(imageUrl)
+                    reply = Reply(reply_type, image_path)
+                else:
+                    reply = Reply(ReplyType.TEXT, msgs)
+            else:
+                reply = Reply(ReplyType.ERROR, msgs)
             return
 
         if ContextType.TEXT == context.type:
