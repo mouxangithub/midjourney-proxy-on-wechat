@@ -13,12 +13,12 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 - [x] midjourney `variation` 变幻
 - [x] midjourney 垫图，算是半支持，需要输入imgine指令的时候带上图片URL
 - [x] 绘图进度百分比查询
+- [x] 解决webp图片无法发送问题
 
 ## 后续对接计划
 - [ ] midjourney 垫图，暂定方式：私聊窗口（非群聊模式）先发送/pad-img + 描述或自编指令，然后发图
 - [ ] midjourney `blend` 混图，暂定方式：私聊窗口（非群聊模式）先发送/blend + 描述或自编指令，然后发图，最后发送/blend-end
 - [ ] midjourney `describe` 识图，暂定方式：私聊窗口（非群聊模式）发图直接生成
-- [ ] 解决webp图片无法发送问题
 - [ ] 聊天窗口插件可通过指令修改mj_url地址等配置
 - [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
 
