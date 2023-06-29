@@ -25,6 +25,8 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
 
+Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip+端口
+
 ### 本地运行和Docker部署
 
 如果是本地或者docker部署的[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)，参考下方方法安装此插件：
