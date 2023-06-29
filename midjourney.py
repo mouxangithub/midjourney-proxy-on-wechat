@@ -147,17 +147,25 @@ class MidJourney(Plugin):
             self.env_detection(e_context)
             cmsg.prepare()
             logger.debug(f"[MJ] 收到图片消息，开始处理 {content} {os.path.exists(content)}")
+            reply = None
             base64_string = image_to_base64(content)
             status, msg, imageUrl = self.mj.describe(base64_string)
-            if status2:
-                if imageUrl:
-                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                    reply_type, image_path = webp_to_png(imageUrl)
-                    reply = Reply(reply_type, image_path)
+            if status:
+                self.sendMsg(channel, context, ReplyType.TEXT, msg)
+                status2, msgs, imageUrl = self.mj.get_f_img(id)
+                if status2:
+                    if imageUrl:
+                        self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                        reply_type, image_path = webp_to_png(imageUrl)
+                        reply = Reply(reply_type, image_path)
+                    else:
+                        reply = Reply(ReplyType.TEXT, msgs)
                 else:
-                    reply = Reply(ReplyType.TEXT, msgs)
+                    reply = Reply(ReplyType.ERROR, msgs)
             else:
-                reply = Reply(ReplyType.ERROR, msgs)
+                reply = Reply(ReplyType.ERROR, msg)
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
             return
 
         if ContextType.TEXT == context.type:
