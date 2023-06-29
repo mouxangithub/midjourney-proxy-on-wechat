@@ -31,10 +31,10 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 
 如果是本地或者docker部署的[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)，参考下方方法安装此插件：
 
-插件安装：根据[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)进行安装该插件，进入聊天窗口
+插件安装：根据[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)进行安装该插件
 
 ```shell
-## 第一步：先认证管理员，如果是临时密码，请重启chatgpt-on-wechat前往logs查看，上方日志中有临时密码
+## 第一步：进入聊天窗口，先认证管理员，如果是临时密码，请重启chatgpt-on-wechat前往logs查看，上方日志中有临时密码
 #auth＋密码
 ## 第二步：认证成功后进行安装
 #installp https://github.com/mouxangithub/midjourney.git
