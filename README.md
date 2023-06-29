@@ -25,36 +25,57 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
 
-然后，如果是railway或者docker部署的，可以在环境变量中加上
-```shell
-mj_url= "" // mj代理部署的地址，必填，没有肯定是出不了图啦
-mj_api_secret= "" // mj代理如若配置了mj.api-secret则此处同步，没有就不管
-imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]" // 此处是触发imagine画图指令的前缀关键字
-fetch_prefix="[\"/fetch\", \"/ft\"]" // 此处是触发fetch查询任务关键字
-```
-如果是本地的话可以在该插件的目录下的json文件进行修改，有些环境可能重启后会删除config.json，所以可以配置config.json.template，环境启动后会自动生成config.json
-```shell
-## /plugins/midjourney/config.json或者/plugins/midjourney/config.json.template
-{
-  "mj_url": "",
-  "mj_api_secret": "",
-  "imagine_prefix": "[\"/imagine\", \"/mj\", \"/img\"]",
-  "fetch_prefix": "[\"/fetch\", \"/ft\"]"
-}
-```
-或者直接修改midjourney.py的源代码中的gconf默认配置，目前仅支持这三四种配置方式，读取优先级为：1.环境变量；2.config.json；3.config.json.template；4.midjourney.py的gconf
+### 1.本地运行和Docker部署
 
-最后，根据[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)进行安装
+如果是本地或者docker部署的[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)，参考下方方法安装此插件：
 
-进入聊天窗口，首先需要先开启管理员权限才能进行安装（如果本地未设密码就前往logs查看，有一个"因未设置口令，本次的临时口令为:xxxx"四位数即为你的临时密码，本地的话就可以直接在/plugins/godcm/config.json进行设置固定密码）
-然后在聊天窗口输入
+Tip: 该插件读取不到docker-compose.yml的环境变量，所以不用去docker-compose.yml配置
+
+插件安装：根据[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)进行安装该插件，进入聊天窗口
+
 ```shell
+## 第一步：先认证管理员，如果是临时密码，请重启chatgpt-on-wechat前往logs查看，上方日志中有临时密码
 #auth＋密码
-```
-然后输入下方指令进行安装
-```shell
+## 第二步：认证成功后进行安装
 #installp https://github.com/mouxangithub/midjourney.git
+## 第三步：前往插件目录/plugins/midjourney/config.json.template如果有config.json就直接改这个文件，加入下方配置
+{
+  "mj_url": "", // midjourney-proxy的服务地址
+  "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
+  "imagine_prefix": "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]", // imagine画图触发前缀
+  "fetch_prefix": "[\"/f\", \"/fetch\"]", // fetch任务查询触发前缀
+  "up_prefix": "[\"/u\", \"/up\"]", // up图片放大和变换触发前缀
+  "pad_prefix": "[\"/p\", \"/pad\"]", // 垫图画图触发前缀
+  "blend_prefix": "[\"/b\", \"/blend\"]", // 混图画图触发前缀
+  "describe_prefix": "[\"/d\", \"/describe\"]" // 图生文触发前缀
+}
+## 第四步：#scanp扫描插件，提示发现MidJourney插件即为成功
+#scanp
+## 第五步：输入/mjhp有提示说明成功，输入/mj出图
 ```
-然后输入/mjhp看看有没有发出说明，或者直接/mj + 描述出图
+
+### 1.railway部署
+
+(1) 如果是railway的，可以在环境变量中加上下方环境变量
+
+```shell
+## 第一步：前往Variables配置下方环境变量
+mj_url= ""
+mj_api_secret= ""
+imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]"
+fetch_prefix="[\"/fetch\", \"/ft\"]"
+up_prefix="[\"/u\", \"/up\"]"
+pad_prefix="[\"/p\", \"/pad\"]"
+blend_prefix="[\"/b\", \"/blend\"]"
+describe_prefix="[\"/d\", \"/describe\"]"
+## 第二步：重新部署redeploy
+## 第三步：扫码登录进入聊天窗口，先认证管理员，如果是临时密码，请重启chatgpt-on-wechat前往logs查看，上方日志中有临时密码
+#auth＋密码
+## 第四步：认证成功后进行安装
+#installp https://github.com/mouxangithub/midjourney.git
+## 第五步：#scanp扫描插件，提示发现MidJourney插件即为成功
+#scanp
+## 第六步：输入/mjhp有提示说明成功，输入/mj出图
+```
 
 详细教程在[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)和[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)有说明
