@@ -1,16 +1,15 @@
 # encoding:utf-8
 import time
 import requests
-import io
-from PIL import Image
-import re
 import os
+import io
 import json
 from bridge.context import ContextType
 from bridge.reply import Reply, ReplyType
 from common.log import logger
 import plugins
 from plugins import *
+from PIL import Image
 
 def check_prefix(content, prefix_list):
     if not prefix_list:
@@ -24,7 +23,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.19",
+    version="1.0.20",
     author="mouxan",
     desire_priority=0
 )
@@ -115,12 +114,16 @@ class MidJourney(Plugin):
     def on_handle_context(self, e_context: EventContext):
         if e_context["context"].type not in [
             ContextType.TEXT,
+            ContextType.IMAGE,
         ]:
             return
 
         channel = e_context['channel']
         context = e_context['context']
         content = context.content
+
+        if ContextType.IMAGE == context.type:
+            logger.debug(f"[MJ] 收到图片消息，开始处理 {content}")
 
         # 判断是否是指令
         iprefix, iq = check_prefix(content, self.imagine_prefix)
@@ -145,8 +148,18 @@ class MidJourney(Plugin):
                 self.sendMsg(channel, context, ReplyType.TEXT, msg)
                 status2, msgs, imageUrl = self.mj.get_f_img(id)
                 if status2:
-                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    if imageUrl:
+                        self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                        if(".webp" in imageUrl):
+                            response = requests.get(imageUrl)
+                            image = Image.open(io.BytesIO(response.content))
+                            image = image.convert("RGB")
+                            image_storage = io.BytesIO()
+                            image.save(image_storage, format="JPEG")
+                        else:
+                            reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    else:
+                        reply = Reply(ReplyType.TEXT, msgs)
                 else:
                     reply = Reply(ReplyType.ERROR, msgs)
             else:
@@ -162,8 +175,18 @@ class MidJourney(Plugin):
                 self.sendMsg(channel, context, ReplyType.TEXT, msg)
                 status2, msgs, imageUrl = self.mj.get_f_img(id)
                 if status2:
-                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    if imageUrl:
+                        self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                        if(".webp" in imageUrl):
+                            response = requests.get(imageUrl)
+                            image = Image.open(io.BytesIO(response.content))
+                            image = image.convert("RGB")
+                            image_storage = io.BytesIO()
+                            image.save(image_storage, format="JPEG")
+                        else:
+                            reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    else:
+                        reply = Reply(ReplyType.TEXT, msgs)
                 else:
                     reply = Reply(ReplyType.ERROR, msgs)
             else:
@@ -177,8 +200,15 @@ class MidJourney(Plugin):
             status, msg, imageUrl = self.mj.fetch(fq)
             if status:
                 if imageUrl:
-                    self.sendMsg(channel, context, ReplyType.TEXT, msg)
-                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                    if(".webp" in imageUrl):
+                        response = requests.get(imageUrl)
+                        image = Image.open(io.BytesIO(response.content))
+                        image = image.convert("RGB")
+                        image_storage = io.BytesIO()
+                        image.save(image_storage, format="JPEG")
+                    else:
+                        reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                 else:
                     reply = Reply(ReplyType.TEXT, msg)
             else:
@@ -244,9 +274,9 @@ class _mjApi:
                 msg += f"{self.fetch_prefix[0]} {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
-                return False, res.json()["failReason"]
+                return False, res.json()["failReason"], None
         except Exception as e:
-            return False, "图片生成失败"
+            return False, "图片生成失败", None
     
     def simpleChange(self, content):
         try:
@@ -263,9 +293,9 @@ class _mjApi:
                 msg += f"{self.fetch_prefix[0]} {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
-                return False, res.json()["failReason"]
+                return False, res.json()["failReason"], None
         except Exception as e:
-            return False, "图片生成失败"
+            return False, "图片生成失败", None
     
     def fetch(self, id):
         try:
@@ -309,9 +339,9 @@ class _mjApi:
                 msg += f"{self.fetch_prefix[0]} {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
-                return False, res.json()["description"]
+                return False, res.json()["description"], None
         except Exception as e:
-            return False, "图片获取失败"
+            return False, "图片获取失败", None
     
     def status(self, status):
         msg = ""
@@ -349,9 +379,11 @@ class _mjApi:
           elif action == "UPSCALE":
               msg = "🎨 放大成功\n"
               msg += f"✨ {rj['description']}\n"
-          return True, msg, rj["imageUrl"]
+          if rj["imageUrl"]:
+              return True, msg, rj["imageUrl"]
+          return True, msg, None
         except Exception as e:
-            return False, "绘图失败"
+            return False, "绘图失败", None
     
     def help_text(self):
         help_text = "欢迎使用MJ机器人\n"
