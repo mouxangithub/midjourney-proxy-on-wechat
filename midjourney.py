@@ -33,7 +33,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.13",
+    version="1.0.14",
     author="mouxan",
     desire_priority=0
 )
@@ -155,16 +155,7 @@ class MidJourney(Plugin):
                 status2, msgs, imageUrl = self.mj.get_f_img(id)
                 if status2:
                     self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                    # 判断是否是webp格式
-                    match = re.search(r".webp", imageUrl)
-                    if match:
-                        status3, msgss, img = self.mj.webp_convert_png(imageUrl)
-                        if status3:
-                            reply = Reply(ReplyType.IMAGE, img)
-                        else:
-                            reply = Reply(ReplyType.ERROR, msgss)
-                    else:
-                        reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                 else:
                     reply = Reply(ReplyType.ERROR, msgs)
             else:
@@ -181,16 +172,7 @@ class MidJourney(Plugin):
                 status2, msgs, imageUrl = self.mj.get_f_img(id)
                 if status2:
                     self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                    # 判断是否是webp格式
-                    match = re.search(r".webp", imageUrl)
-                    if match:
-                        status3, msgss, img = self.mj.webp_convert_png(imageUrl)
-                        if status3:
-                            reply = Reply(ReplyType.IMAGE, img)
-                        else:
-                            reply = Reply(ReplyType.ERROR, msgss)
-                    else:
-                        reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                 else:
                     reply = Reply(ReplyType.ERROR, msgs)
             else:
@@ -205,16 +187,7 @@ class MidJourney(Plugin):
             if status:
                 if imageUrl:
                     self.sendMsg(channel, context, ReplyType.TEXT, msg)
-                    # 判断是否是webp格式
-                    match = re.search(r".webp", imageUrl)
-                    if match:
-                        status3, msgss, img = self.mj.webp_convert_png(imageUrl)
-                        if status3:
-                            reply = Reply(ReplyType.IMAGE, img)
-                        else:
-                            reply = Reply(ReplyType.ERROR, msgss)
-                    else:
-                        reply = Reply(ReplyType.IMAGE_URL, imageUrl)
+                    reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                 else:
                     reply = Reply(ReplyType.TEXT, msg)
             else:
@@ -375,17 +348,6 @@ class _mjApi:
           return True, msg, rj["imageUrl"]
         except Exception as e:
             return False, "绘图失败"
-    
-    def webp_convert_png(self, webp):
-        try:
-            res = requests.get(webp)
-            # 将WebP图片转换为PIL Image对象
-            image = Image.open(io.BytesIO(res.content))
-            # 转换为PNG格式
-            image.save("image.png", "PNG")
-            return True, "图片获取成功", image
-        except Exception as e:
-            return False, "图片获取失败"
     
     def help_text(self):
         help_text = "欢迎使用MJ机器人\n"
