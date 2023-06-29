@@ -40,6 +40,7 @@ class _mjApi:
             else:
                 return False, res.json()["failReason"], None
         except Exception as e:
+            logger.exception(e)
             return False, "图片生成失败", None
     
     def simpleChange(self, content):
@@ -59,6 +60,7 @@ class _mjApi:
             else:
                 return False, res.json()["failReason"], None
         except Exception as e:
+            logger.exception(e)
             return False, "图片生成失败", None
     
     def fetch(self, id):
@@ -106,6 +108,7 @@ class _mjApi:
             else:
                 return False, res.json()["description"], None
         except Exception as e:
+            logger.exception(e)
             return False, "图片获取失败", None
     
     def get_f_img(self, id):
@@ -149,7 +152,8 @@ class _mjApi:
               return True, msg, rj["imageUrl"]
           return True, msg, None
         except Exception as e:
-            return False, "绘图失败", None
+            logger.exception(e)
+            return False, "请求失败", None
     
     def status(self, status):
         msg = ""
