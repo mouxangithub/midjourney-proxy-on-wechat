@@ -143,9 +143,7 @@ class MidJourney(Plugin):
 
         # 图片非群聊
         if ContextType.IMAGE == context.type and not context["isgroup"]:
-            logger.debug(f"[MJ] 收到图片消息，开始处理 {content}")
-            curdir = os.path.dirname(content)
-            logger.debug(f"[MJ] 收到图片消息，开始处理 {curdir}")
+            logger.debug(f"[MJ] 收到图片消息，开始处理 {content} {os.path.exists(content)}")
             # self.env_detection(e_context)
             # base64_string = image_to_base64(content)
             # status, msg, imageUrl = self.mj.describe(base64_string)
