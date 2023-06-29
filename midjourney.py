@@ -24,7 +24,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.16",
+    version="1.0.17",
     author="mouxan",
     desire_priority=0
 )
@@ -107,7 +107,14 @@ class MidJourney(Plugin):
         else:
             self.describe_prefix = eval(gconf["describe_prefix"])
         
-        self.mj = _mjApi(self.mj_url, self.mj_api_secret)
+        self.mj = _mjApi(self.mj_url, self.mj_api_secret, {
+            "imagine_prefix": self.imagine_prefix,
+            "fetch_prefix": self.fetch_prefix,
+            "up_prefix": self.up_prefix,
+            "pad_prefix": self.pad_prefix,
+            "blend_prefix": self.blend_prefix,
+            "describe_prefix": self.describe_prefix
+        })
 
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
         logger.info("[MJ] inited. mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
@@ -175,7 +182,6 @@ class MidJourney(Plugin):
             self.env_detection(e_context)
             logger.debug("[MJ] /fetch fprefix={} fq={}".format(fprefix,fq))
             status, msg, imageUrl = self.mj.fetch(fq)
-            logger.error(msg)
             if status:
                 if imageUrl:
                     self.sendMsg(channel, context, ReplyType.TEXT, msg)
@@ -210,13 +216,15 @@ class MidJourney(Plugin):
 
 
 class _mjApi:
-    def __init__(self, mj_url, mj_api_secret):
+    def __init__(self, mj_url, mj_api_secret, prefix):
         self.baseUrl = mj_url
         self.headers = {
             "Content-Type": "application/json",
         }
         if mj_api_secret:
             self.headers["mj-api-secret"] = mj_api_secret
+        if prefix:
+            self.prefix = prefix
     
     def imagine(self, text):
         try:
@@ -229,8 +237,8 @@ class _mjApi:
                 msg += f"🚀 正在快速处理中，请稍后\n"
                 msg += f"📨 ID: {res.json()['result']}\n"
                 msg += f"🪄 进度\n"
-                msg += f"✏  使用[/fetch + 任务ID操作]\n"
-                msg += f"/fetch {res.json()['result']}"
+                msg += f"✏  使用[{self.prefix.fetch_prefix[0]} + 任务ID操作]\n"
+                msg += f"{self.prefix.fetch_prefix[0]} {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
                 return False, res.json()["failReason"]
@@ -248,8 +256,8 @@ class _mjApi:
                 msg += f"🚀 正在快速处理中，请稍后\n"
                 msg += f"📨 ID: {res.json()['result']}\n"
                 msg += f"🪄 进度\n"
-                msg += f"✏  使用[/fetch + 任务ID操作]\n"
-                msg += f"/fetch {res.json()['result']}"
+                msg += f"✏  使用[{self.prefix.fetch_prefix[0]} + 任务ID操作]\n"
+                msg += f"{self.prefix.fetch_prefix[0]} {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
                 return False, res.json()["failReason"]
@@ -294,8 +302,8 @@ class _mjApi:
                 msg += f"🚀 正在快速处理中，请稍后\n"
                 msg += f"📨 ID: {res.json()['result']}\n"
                 msg += f"🪄 进度\n"
-                msg += f"✏  使用[/fetch + 任务ID操作]\n"
-                msg += f"/fetch {res.json()['result']}"
+                msg += f"✏  使用[{self.prefix.fetch_prefix[0]} + 任务ID操作]\n"
+                msg += f"{self.prefix.fetch_prefix[0]} {res.json()['result']}"
                 return True, msg, res.json()["result"]
             else:
                 return False, res.json()["description"]
@@ -333,8 +341,8 @@ class _mjApi:
               msg += f"📨 ID: {id}\n"
               msg += f"✨ 内容: {rj['prompt']}\n"
               msg += f"🪄 放大 U1～U4，变换 V1～V4\n"
-              msg += f"✏ 使用[/up 任务ID 操作]\n"
-              msg += f"/up {id} U1"
+              msg += f"✏ 使用[{self.prefix.up_prefix[0]} 任务ID 操作]\n"
+              msg += f"{self.prefix.up_prefix[0]} {id} U1"
           elif action == "UPSCALE":
               msg = "🎨 放大成功\n"
               msg += f"✨ {rj['description']}\n"
