@@ -23,7 +23,7 @@ def check_prefix(content, prefix_list):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.21",
+    version="1.0.22",
     author="mouxan",
     desire_priority=0
 )
@@ -156,6 +156,7 @@ class MidJourney(Plugin):
                             image = image.convert("RGB")
                             image_storage = io.BytesIO()
                             image.save(image_storage, format="JPEG")
+                            reply = Reply(ReplyType.IMAGE, image)
                         else:
                             reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                     else:
@@ -183,6 +184,7 @@ class MidJourney(Plugin):
                             image = image.convert("RGB")
                             image_storage = io.BytesIO()
                             image.save(image_storage, format="JPEG")
+                            reply = Reply(ReplyType.IMAGE, image)
                         else:
                             reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                     else:
@@ -207,6 +209,7 @@ class MidJourney(Plugin):
                         image = image.convert("RGB")
                         image_storage = io.BytesIO()
                         image.save(image_storage, format="JPEG")
+                        reply = Reply(ReplyType.IMAGE, image)
                     else:
                         reply = Reply(ReplyType.IMAGE_URL, imageUrl)
                 else:
