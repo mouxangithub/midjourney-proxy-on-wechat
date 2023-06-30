@@ -5,13 +5,17 @@ import io
 import json
 import base64
 import plugins
+from bridge.bridge import Bridge
 from bridge.context import ContextType
 from bridge.reply import Reply, ReplyType
+from common import const
 from common.log import logger
+from common.expired_dict import ExpiredDict
 from plugins import *
 from PIL import Image
-from .mjapi import _mjApi
+from .mjapi import _mjApi, _imgCache
 from channel.chat_message import ChatMessage
+from config import conf
 
 def check_prefix(content, prefix_list):
     if not prefix_list:
@@ -44,7 +48,7 @@ def webp_to_png(webp_path):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.27",
+    version="1.0.28",
     author="mouxan",
     desire_priority=0
 )
@@ -130,6 +134,13 @@ class MidJourney(Plugin):
         self.mj = _mjApi(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix, self.up_prefix, self.pad_prefix, self.blend_prefix, self.describe_prefix)
 
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
+        
+        # 目前没有设计session过期事件，这里先暂时使用过期字典
+        if conf().get("expires_in_seconds"):
+            self.sessions = ExpiredDict(conf().get("expires_in_seconds"))
+        else:
+            self.sessions = dict()
+
         logger.info("[MJ] inited. mj_url={} mj_api_secret={} imagine_prefix={} fetch_prefix={}".format(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix))
 
     def on_handle_context(self, e_context: EventContext):
@@ -141,34 +152,95 @@ class MidJourney(Plugin):
 
         channel = e_context['channel']
         context = e_context['context']
-        cmsg = context["msg"]
         content = context.content
+        msg: ChatMessage = context["msg"]
+        sessionid = context["session_id"]
+        bot = Bridge().get_bot("chat")
 
-        # 图片非群聊
-        if ContextType.IMAGE == context.type and not context["isgroup"]:
+        # 图片
+        if ContextType.IMAGE == context.type:
             self.env_detection(e_context)
-            cmsg.prepare()
-            logger.debug(f"[MJ] 收到图片消息，开始处理 {content} {os.path.exists(content)}")
+            msg.prepare()
             reply = None
             base64_string = image_to_base64(content)
-            status, msg, id = self.mj.describe(base64_string)
-            if status:
-                self.sendMsg(channel, context, ReplyType.TEXT, msg)
-                status2, msgs, imageUrl = self.mj.get_f_img(id)
-                if status2:
-                    if imageUrl:
-                        self.sendMsg(channel, context, ReplyType.TEXT, msgs)
-                        reply_type, image_path = webp_to_png(imageUrl)
-                        reply = Reply(reply_type, image_path)
+            img_cache = self.sessions[sessionid].get_cache()
+            # 私聊模式并且没有指令
+            if not context["isgroup"] and not img_cache["instruct"]:
+                status, msg, id = self.mj.describe(base64_string)
+                if status:
+                    self.sendMsg(channel, context, ReplyType.TEXT, msg)
+                    status2, msgs, imageUrl = self.mj.get_f_img(id)
+                    if status2:
+                        if imageUrl:
+                            self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                            reply_type, image_path = webp_to_png(imageUrl)
+                            reply = Reply(reply_type, image_path)
+                        else:
+                            reply = Reply(ReplyType.TEXT, msgs)
                     else:
-                        reply = Reply(ReplyType.TEXT, msgs)
+                        reply = Reply(ReplyType.ERROR, msgs)
                 else:
-                    reply = Reply(ReplyType.ERROR, msgs)
-            else:
-                reply = Reply(ReplyType.ERROR, msg)
-            e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS
-            return
+                    reply = Reply(ReplyType.ERROR, msg)
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+            
+            if img_cache["instruct"] == "pad":
+                status, msg, id = self.mj.imagine(img_cache["prompt"], base64_string)
+                if status:
+                    self.sendMsg(channel, context, ReplyType.TEXT, msg)
+                    status2, msgs, imageUrl = self.mj.get_f_img(id)
+                    if status2:
+                        if imageUrl:
+                            self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                            reply_type, image_path = webp_to_png(imageUrl)
+                            reply = Reply(reply_type, image_path)
+                        else:
+                            reply = Reply(ReplyType.TEXT, msgs)
+                    else:
+                        reply = Reply(ReplyType.ERROR, msgs)
+                else:
+                    reply = Reply(ReplyType.ERROR, msg)
+                self.sessions[sessionid].reset()
+                del self.sessions[sessionid]
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+            
+            if img_cache["instruct"] == "blend":
+                self.sessions[sessionid].action(base64_string)
+                img_cache = self.sessions[sessionid].get_cache()
+                length = len(img_cache["base64Array"])
+                if length < 2:
+                    reply = Reply(ReplyType.TEXT, "请再发送一张或多张图片")
+                else:
+                    reply = Reply(ReplyType.TEXT, f"您已发送{length}张图片，可以发送更多图片或者发送[/done]开始合成")
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+
+            if img_cache["instruct"] == "describe":
+                status, msg, id = self.mj.describe(base64_string)
+                if status:
+                    self.sendMsg(channel, context, ReplyType.TEXT, msg)
+                    status2, msgs, imageUrl = self.mj.get_f_img(id)
+                    if status2:
+                        if imageUrl:
+                            self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                            reply_type, image_path = webp_to_png(imageUrl)
+                            reply = Reply(reply_type, image_path)
+                        else:
+                            reply = Reply(ReplyType.TEXT, msgs)
+                    else:
+                        reply = Reply(ReplyType.ERROR, msgs)
+                else:
+                    reply = Reply(ReplyType.ERROR, msg)
+                self.sessions[sessionid].reset()
+                del self.sessions[sessionid]
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+
 
         if ContextType.TEXT == context.type:
             # 判断是否是指令
@@ -240,6 +312,66 @@ class MidJourney(Plugin):
                         reply = Reply(ReplyType.TEXT, msg)
                 else:
                     reply = Reply(ReplyType.ERROR, msg)
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+            elif pprefix == True:
+                self.env_detection(e_context)
+                logger.debug("[MJ] /pad pprefix={} pq={}".format(pprefix,pq))
+                if not pq:
+                    reply = Reply(ReplyType.TEXT, "请输入要绘制的文字后发送图片")
+                else:
+                    self.sessions[sessionid] = _imgCache(bot, sessionid, "pad", pq)
+                    reply = Reply(ReplyType.TEXT, "请再发送一张图片")
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+            elif bprefix == True:
+                self.env_detection(e_context)
+                logger.debug("[MJ] /blend bprefix={} bq={}".format(bprefix,bq))
+                self.sessions[sessionid] = _imgCache(bot, sessionid, "blend", bq)
+                reply = Reply(ReplyType.TEXT, "请发送两张以上的图片，然后输入['/done']结束")
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+            elif dprefix == True:
+                self.env_detection(e_context)
+                logger.debug("[MJ] /describe dprefix={} dq={}".format(dprefix,dq))
+                self.sessions[sessionid] = _imgCache(bot, sessionid, "describe", dq)
+                reply = Reply(ReplyType.TEXT, "请发送一张图片开启识图模式")
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+            elif content == "/done":
+                self.env_detection(e_context)
+                # 从会话中获取缓存的图片
+                img_cache = self.sessions[sessionid].get_cache()
+                base64Array = img_cache["base64Array"]
+                prompt = img_cache["prompt"]
+                length = len(base64Array)
+                if length==0:
+                    reply = Reply(ReplyType.TEXT, "缓存中无可混合的图片，请重新发送混图指令开启混图模式")
+                elif length > 2:
+                    reply = Reply(ReplyType.TEXT, "请再发送一张图片方可完成混图")
+                else:
+                    logger.debug("[MJ] /done")
+                    status, msg, id = self.mj.blend(img_cache["base64Array"], prompt)
+                    if status:
+                        self.sendMsg(channel, context, ReplyType.TEXT, msg)
+                        status2, msgs, imageUrl = self.mj.get_f_img(id)
+                        if status2:
+                            if imageUrl:
+                                self.sendMsg(channel, context, ReplyType.TEXT, msgs)
+                                reply_type, image_path = webp_to_png(imageUrl)
+                                reply = Reply(reply_type, image_path)
+                            else:
+                                reply = Reply(ReplyType.TEXT, msgs)
+                        else:
+                            reply = Reply(ReplyType.ERROR, msgs)
+                    else:
+                        reply = Reply(ReplyType.ERROR, msg)
+                self.sessions[sessionid].reset()
+                del self.sessions[sessionid]
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return

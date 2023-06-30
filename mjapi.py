@@ -24,10 +24,13 @@ class _mjApi:
             self.describe_prefix = describe_prefix
     
     # 图片想象接口
-    def imagine(self, text):
+    def imagine(self, text, base64=""):
         try:
             url = self.baseUrl + "/mj/submit/imagine"
-            data = {"prompt": text}
+            data = {
+                "prompt": text,
+                "base64": base64
+            }
             res = requests.post(url, json=data, headers=self.headers)
             rj = res.json()
             if not rj:
@@ -51,6 +54,32 @@ class _mjApi:
         try:
             url = self.baseUrl + "/mj/submit/simple-change"
             data = {"content": content}
+            res = requests.post(url, json=data, headers=self.headers)
+            rj = res.json()
+            if not rj:
+                return False, "MJ服务异常", None
+            code = rj["code"]
+            if code == 1:
+                msg = "✅ 您的任务已提交\n"
+                msg += f"🚀 正在快速处理中，请稍后\n"
+                msg += f"📨 ID: {rj['result']}\n"
+                msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
+                msg += f"{self.fetch_prefix[0]} {rj['result']}"
+                return True, msg, rj["result"]
+            else:
+                return False, f"任务提交失败：{rj['failReason']}", None
+        except Exception as e:
+            logger.exception(e)
+            return False, "任务提交失败", None
+    
+    # 混合图片接口
+    def blend(self, base64Array, dimensions=""):
+        try:
+            url = self.baseUrl + "/mj/submit/blend"
+            data = {
+                "base64Array": base64Array,
+                "dimensions": dimensions
+            }
             res = requests.post(url, json=data, headers=self.headers)
             rj = res.json()
             if not rj:
@@ -243,7 +272,7 @@ class _mjApi:
         help_text += f"Tips: prompt 即你提的绘画描述\n"
         help_text += f"📕 prompt附加参数 \n"
         help_text += f"1.解释: 在prompt后携带的参数, 可以使你的绘画更别具一格\n"
-        help_text += f"2.示例: /mj prompt --ar 16:9\n"
+        help_text += f"2.示例: {self.imagine_prefix[0]} prompt --ar 16:9\n"
         help_text += f"3.使用: 需要使用--key value, key和value空格隔开, 多个附加参数空格隔开\n"
         help_text += f"------------------------------\n"
         help_text += f"📗 附加参数列表\n"
@@ -254,3 +283,36 @@ class _mjApi:
         help_text += f"5. --style 风格 (4a,4b,4c)v4可用 (expressive,cute)niji5可用\n"
         help_text += f"6. --s 风格化 1-1000 (625-60000)v3"
         return help_text
+
+class _imgCache:
+    def __init__(self, bot, sessionid, instruct, prompt):
+        self.cache = {}
+        self.bot = bot
+        self.sessionid = sessionid
+        bot.sessions.clear_session(sessionid)
+        self.instruct = instruct
+        self.prompt = prompt
+        self.base64Array = []
+
+    def reset(self):
+        self.bot.sessions.clear_session(self.sessionid)
+        self.instruct = ""
+        self.prompt = ""
+        self.base64Array = []
+    
+    def get_cache(self):
+        return {
+            "instruct": self.instruct if self.instruct else "",
+            "prompt": self.prompt if self.prompt else "",
+            "base64": self.base64_array[0] if self.base64_array else "",
+            "base64Array": self.base64_array[0] if self.base64_array else []
+        }
+
+    def action(self, base64):
+        self.base64Array.append(base64)
+        return {
+            "instruct": self.instruct,
+            "prompt": self.prompt,
+            "base64": base64,
+            "base64Array": self.base64Array
+        }
