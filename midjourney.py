@@ -151,7 +151,6 @@ class MidJourney(Plugin):
             logger.debug(f"[MJ] 收到图片消息，开始处理 {content} {os.path.exists(content)}")
             reply = None
             base64_string = image_to_base64(content)
-            logger.debug(f"[MJ] 图片转base64：{base64_string}")
             status, msg, id = self.mj.describe(base64_string)
             if status:
                 self.sendMsg(channel, context, ReplyType.TEXT, msg)

@@ -120,6 +120,7 @@ class _mjApi:
             if finishTime:
                 msg += f"完成时间：{finishTime}\n"
             if rj['imageUrl']:
+                msg += f"✨ 图片地址: {rj['imageUrl']}\n"
                 return True, msg, rj['imageUrl']
             return True, msg, None
         except Exception as e:
@@ -172,7 +173,7 @@ class _mjApi:
                 if startTime:
                     msg += f"开始时间：{startTime}\n"
                 if finishTime:
-                    msg += f"完成时间：{finishTime}\n"
+                    msg += f"完成时间：{finishTime}"
                 if rj["imageUrl"]:
                     return True, msg, rj["imageUrl"]
                 return True, msg, None
@@ -200,9 +201,15 @@ class _mjApi:
                 msg += f"ID: {rj[i]['id']}\n"
                 msg += f"进度：{rj[i]['progress']}\n"
                 msg += f"内容：{rj[i]['prompt']}\n"
+                msg += f"描述：{rj[i]['description']}\n"
                 msg += f"状态：{self.status(rj[i]['status'])}\n"
+                startTime = ""
+                if rj[i]['startTime']:
+                    startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj[i]['startTime']/1000))
+                if startTime:
+                    msg += f"开始时间：{startTime}\n"
             msg += f"------------------------------\n"
-            msg += f"共计：{len(rj)}个任务在执行\n"
+            msg += f"共计：{len(rj)}个任务在执行"
             return True, msg
         except Exception as e:
             logger.exception(e)
