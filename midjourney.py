@@ -214,9 +214,9 @@ class MidJourney(Plugin):
                 img_cache = self.sessions[sessionid].get_cache()
                 length = len(img_cache["base64Array"])
                 if length < 2:
-                    reply = Reply(ReplyType.TEXT, "请再发送一张或多张图片")
+                    reply = Reply(ReplyType.TEXT, f"✏  请再发送一张或多张图片")
                 else:
-                    reply = Reply(ReplyType.TEXT, f"您已发送{length}张图片，可以发送更多图片或者发送[/end]开始合成")
+                    reply = Reply(ReplyType.TEXT, f"✏  您已发送{length}张图片，可以发送更多图片或者发送[/end]开始合成")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -321,10 +321,10 @@ class MidJourney(Plugin):
                 self.env_detection(e_context)
                 logger.debug("[MJ] /pad pprefix={} pq={}".format(pprefix,pq))
                 if not pq:
-                    reply = Reply(ReplyType.TEXT, "请输入要绘制的文字后发送图片")
+                    reply = Reply(ReplyType.TEXT, "✏ 请输入要绘制的文字后发送图片")
                 else:
                     self.sessions[sessionid] = _imgCache(bot, sessionid, "pad", pq)
-                    reply = Reply(ReplyType.TEXT, "请再发送一张图片")
+                    reply = Reply(ReplyType.TEXT, "✨ 垫图模式已经开启\n✏ 请再发送一张图片")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -332,7 +332,7 @@ class MidJourney(Plugin):
                 self.env_detection(e_context)
                 logger.debug("[MJ] /blend bprefix={} bq={}".format(bprefix,bq))
                 self.sessions[sessionid] = _imgCache(bot, sessionid, "blend", bq)
-                reply = Reply(ReplyType.TEXT, "请发送两张以上的图片，然后输入['/end']结束")
+                reply = Reply(ReplyType.TEXT, "✨ 混图模式已经开启\n✏ 请发送两张以上的图片，然后输入['/end']结束")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -340,7 +340,7 @@ class MidJourney(Plugin):
                 self.env_detection(e_context)
                 logger.debug("[MJ] /describe dprefix={} dq={}".format(dprefix,dq))
                 self.sessions[sessionid] = _imgCache(bot, sessionid, "describe", dq)
-                reply = Reply(ReplyType.TEXT, "请发送一张图片开启识图模式")
+                reply = Reply(ReplyType.TEXT, "✨ 识图模式已开启\n✏ 请发送一张图片开启识图模式")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -352,11 +352,10 @@ class MidJourney(Plugin):
                 prompt = img_cache["prompt"]
                 length = len(base64Array)
                 if length==0:
-                    reply = Reply(ReplyType.TEXT, "缓存中无可混合的图片，请重新发送混图指令开启混图模式")
+                    reply = Reply(ReplyType.TEXT, "✏ 缓存中无可混合的图片，请重新发送混图指令开启混图模式")
                 elif length > 2:
-                    reply = Reply(ReplyType.TEXT, "请再发送一张图片方可完成混图")
+                    reply = Reply(ReplyType.TEXT, "✏ 请再发送一张图片方可完成混图")
                 else:
-                    logger.debug("[MJ] /end")
                     status, msg, id = self.mj.blend(img_cache["base64Array"], prompt)
                     if status:
                         self.sendMsg(channel, context, ReplyType.TEXT, msg)
