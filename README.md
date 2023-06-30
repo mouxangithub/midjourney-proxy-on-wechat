@@ -11,13 +11,12 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 - [x] midjourney `imgine` 想象
 - [x] midjourney `upscale` 放大
 - [x] midjourney `variation` 变幻
-- [x] midjourney 垫图，算是半支持，需要输入imgine指令的时候带上图片URL（如果开启了翻译模式似乎就会把url剔除，稍后会出个直接发送/pad然后发图片进行垫图绘画）
-- [x] 绘图进度百分比查询
-- [x] 解决webp图片无法发送问题
-- [x] /queue 任务队列查询
 - [x] midjourney `describe` 识图，使用方式：（1）私聊窗口（非群聊模式）发图直接生成；（2）发送describe_prefix配置的指令，然后发送一张图片进行识别（此方法不限群聊还是私聊方式）
-- [x] midjourney 垫图，使用方式：发送pad_prefix配置的指令+prompt描述，然后发送一张图片进行生成（此方法不限群聊还是私聊方式）
 - [x] midjourney `blend` 混图，使用方式：发送blend_prefix配置的指令，然后发送多张图片进行混合（此方法不限群聊还是私聊方式）
+- [x] midjourney 垫图，使用方式：发送pad_prefix配置的指令+prompt描述，然后发送一张图片进行生成（此方法不限群聊还是私聊方式）
+- [x] 绘图进度百分比查询
+- [x] 发送/queue 任务队列查询
+- [x] 解决webp图片无法发送问题
 
 ## 后续对接计划
 - [ ] 聊天窗口插件可通过指令修改mj_url地址等配置
