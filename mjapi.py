@@ -77,9 +77,10 @@ class _mjApi:
         try:
             url = self.baseUrl + "/mj/submit/blend"
             data = {
-                "base64Array": base64Array,
-                "dimensions": dimensions
+                "base64Array": base64Array
             }
+            if dimensions:
+                data["dimensions"] = dimensions
             res = requests.post(url, json=data, headers=self.headers)
             rj = res.json()
             if not rj:
