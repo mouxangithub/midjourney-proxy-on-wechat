@@ -163,9 +163,11 @@ class MidJourney(Plugin):
             msg.prepare()
             reply = None
             base64_string = image_to_base64(content)
-            img_cache = self.sessions[sessionid].get_cache()
+            img_cache = None
+            if sessionid in self.sessions:
+                img_cache = self.sessions[sessionid].get_cache()
             # 私聊模式并且没有指令
-            if not context["isgroup"] and not img_cache["instruct"]:
+            if not context["isgroup"] and (not img_cache["instruct"] or not img_cache):
                 status, msg, id = self.mj.describe(base64_string)
                 if status:
                     self.sendMsg(channel, context, ReplyType.TEXT, msg)
@@ -185,7 +187,7 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             
-            if img_cache["instruct"] == "pad":
+            if img_cache and img_cache["instruct"] == "pad":
                 status, msg, id = self.mj.imagine(img_cache["prompt"], base64_string)
                 if status:
                     self.sendMsg(channel, context, ReplyType.TEXT, msg)
@@ -207,7 +209,7 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             
-            if img_cache["instruct"] == "blend":
+            if img_cache and img_cache["instruct"] == "blend":
                 self.sessions[sessionid].action(base64_string)
                 img_cache = self.sessions[sessionid].get_cache()
                 length = len(img_cache["base64Array"])
@@ -219,7 +221,7 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
 
-            if img_cache["instruct"] == "describe":
+            if img_cache and img_cache["instruct"] == "describe":
                 status, msg, id = self.mj.describe(base64_string)
                 if status:
                     self.sendMsg(channel, context, ReplyType.TEXT, msg)
