@@ -14,6 +14,7 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 - [x] midjourney 垫图，算是半支持，需要输入imgine指令的时候带上图片URL
 - [x] 绘图进度百分比查询
 - [x] 解决webp图片无法发送问题
+- [x] /queue 任务队列查询
 - [x] midjourney `describe` 识图，暂定方式：私聊窗口（非群聊模式）发图直接生成
 
 ## 后续对接计划

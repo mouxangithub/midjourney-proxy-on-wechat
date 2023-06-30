@@ -44,7 +44,7 @@ def webp_to_png(webp_path):
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.26",
+    version="1.0.27",
     author="mouxan",
     desire_priority=0
 )
@@ -182,7 +182,6 @@ class MidJourney(Plugin):
 
             reply = None
             if content == "/mjhp" or content == "/mjhelp" or content == "/mj-help":
-                self.env_detection(e_context)
                 reply = Reply(ReplyType.INFO, self.mj.help_text())
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
@@ -240,6 +239,16 @@ class MidJourney(Plugin):
                         reply = Reply(reply_type, image_path)
                     else:
                         reply = Reply(ReplyType.TEXT, msg)
+                else:
+                    reply = Reply(ReplyType.ERROR, msg)
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                return
+            elif content == "/queue":
+                self.env_detection(e_context)
+                status, msg = self.mj.task_queue()
+                if status:
+                    reply = Reply(ReplyType.TEXT, msg)
                 else:
                     reply = Reply(ReplyType.ERROR, msg)
                 e_context["reply"] = reply

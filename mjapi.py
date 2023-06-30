@@ -23,140 +23,187 @@ class _mjApi:
         if describe_prefix:
             self.describe_prefix = describe_prefix
     
+    # 图片想象接口
     def imagine(self, text):
         try:
             url = self.baseUrl + "/mj/submit/imagine"
             data = {"prompt": text}
             res = requests.post(url, json=data, headers=self.headers)
-            code = res.json()["code"]
+            rj = res.json()
+            if not rj:
+                return False, "MJ服务异常", None
+            code = rj["code"]
             if code == 1:
                 msg = "✅ 您的任务已提交\n"
                 msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 ID: {res.json()['result']}\n"
-                msg += f"🪄 进度\n"
+                msg += f"📨 ID: {rj['result']}\n"
                 msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-                msg += f"{self.fetch_prefix[0]} {res.json()['result']}"
-                return True, msg, res.json()["result"]
+                msg += f"{self.fetch_prefix[0]} {rj['result']}"
+                return True, msg, rj["result"]
             else:
-                return False, res.json()["failReason"], None
+                return False, rj["failReason"], None
         except Exception as e:
             logger.exception(e)
-            return False, "图片生成失败", None
+            return False, "任务提交失败", None
     
+    # 放大/变换图片接口
     def simpleChange(self, content):
         try:
             url = self.baseUrl + "/mj/submit/simple-change"
             data = {"content": content}
             res = requests.post(url, json=data, headers=self.headers)
-            code = res.json()["code"]
+            rj = res.json()
+            if not rj:
+                return False, "MJ服务异常", None
+            code = rj["code"]
             if code == 1:
                 msg = "✅ 您的任务已提交\n"
                 msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 ID: {res.json()['result']}\n"
-                msg += f"🪄 进度\n"
+                msg += f"📨 ID: {rj['result']}\n"
                 msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-                msg += f"{self.fetch_prefix[0]} {res.json()['result']}"
-                return True, msg, res.json()["result"]
+                msg += f"{self.fetch_prefix[0]} {rj['result']}"
+                return True, msg, rj["result"]
             else:
-                return False, res.json()["failReason"], None
+                return False, f"任务提交失败：{rj['failReason']}", None
         except Exception as e:
             logger.exception(e)
-            return False, "图片生成失败", None
+            return False, "任务提交失败", None
     
-    def fetch(self, id):
-        try:
-            url = self.baseUrl + f"/mj/task/{id}/fetch"
-            res = requests.get(url, headers=self.headers)
-            status = res.json()['status']
-            startTime = ""
-            finishTime = ""
-            if res.json()['startTime']:
-                startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['startTime']/1000))
-            if res.json()['finishTime']:
-                finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
-            msg = "✅ 查询成功\n"
-            msg += f"ID: {res.json()['id']}\n"
-            msg += f"内容：{res.json()['prompt']}\n"
-            msg += f"内容(英文)：{res.json()['promptEn']}\n"
-            msg += f"状态：{self.status(status)}\n"
-            msg += f"进度：{res.json()['progress']}\n"
-            if startTime:
-                msg += f"开始时间：{startTime}\n"
-            if finishTime:
-                msg += f"完成时间：{finishTime}\n"
-            if res.json()['imageUrl']:
-                return True, msg, res.json()['imageUrl']
-            return True, msg, None
-        except Exception as e:
-            logger.exception(e)
-            return False, f"查询失败: {e}", None
-    
+    # 识图接口
     def describe(self, base64):
         try:
             url = self.baseUrl + "/mj/submit/describe"
             data = {"base64": base64}
             res = requests.post(url, json=data, headers=self.headers)
-            code = res.json()["code"]
+            rj = res.json()
+            if not rj:
+                return False, "MJ服务异常", None
+            code = rj["code"]
             if code == 1:
                 msg = "✅ 您的任务已提交\n"
                 msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 ID: {res.json()['result']}\n"
-                msg += f"🪄 进度\n"
+                msg += f"📨 ID: {rj['result']}\n"
                 msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-                msg += f"{self.fetch_prefix[0]} {res.json()['result']}"
-                return True, msg, res.json()["result"]
+                msg += f"{self.fetch_prefix[0]} {rj['result']}"
+                return True, msg, rj["result"]
             else:
-                return False, res.json()["description"], None
+                return False, f"任务提交失败：{rj['failReason']}", None
         except Exception as e:
             logger.exception(e)
-            return False, "图片获取失败", None
+            return False, "任务提交失败", None
     
+    # 查询提交的任务信息
+    def fetch(self, id):
+        try:
+            url = self.baseUrl + f"/mj/task/{id}/fetch"
+            res = requests.get(url, headers=self.headers)
+            rj = res.json()
+            if not rj:
+                return False, "查询任务不存在", None
+            status = rj['status']
+            startTime = ""
+            finishTime = ""
+            if rj['startTime']:
+                startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['startTime']/1000))
+            if rj['finishTime']:
+                finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['finishTime']/1000))
+            msg = "✅ 查询成功\n"
+            msg += f"ID: {rj['id']}\n"
+            msg += f"进度：{rj['progress']}\n"
+            msg += f"内容：{rj['prompt']}\n"
+            msg += f"内容(英文)：{rj['promptEn']}\n"
+            msg += f"状态：{self.status(status)}\n"
+            if rj['failReason']:
+                msg += f"失败原因：{rj['failReason']}\n"
+            if startTime:
+                msg += f"开始时间：{startTime}\n"
+            if finishTime:
+                msg += f"完成时间：{finishTime}\n"
+            if rj['imageUrl']:
+                return True, msg, rj['imageUrl']
+            return True, msg, None
+        except Exception as e:
+            logger.exception(e)
+            return False, "查询失败", None
+    
+    # 轮询获取任务结果
     def get_f_img(self, id):
         try:
           url = self.baseUrl + f"/mj/task/{id}/fetch"
           status = ""
           rj = ""
           while status != "SUCCESS" or status != "FAILURE":
-              time.sleep(3)
-              res = requests.get(url, headers=self.headers)
-              rj = res.json()
-              status = rj["status"]
-          action = rj["action"]
-          msg = ""
-          startTime = ""
-          finishTime = ""
-          if status != "SUCCESS":
-              if res.json()['startTime']:
-                  startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['startTime']/1000))
-              if res.json()['finishTime']:
-                  finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
-              if action == "IMAGINE":
-                  msg = f"🎨 绘图成功\n"
-                  msg += f"📨 ID: {id}\n"
-                  msg += f"✨ 内容: {rj['prompt']}\n"
-                  msg += f"✨ 内容(英文): {rj['promptEn']}\n"
-                  msg += f"🪄 放大 U1～U4，变换 V1～V4\n"
-                  msg += f"✏ 使用[{self.up_prefix[0]} 任务ID 操作]\n"
-                  msg += f"{self.up_prefix[0]} {id} U1"
-              elif action == "UPSCALE":
-                  msg = "🎨 放大成功\n"
-                  msg += f"✨ {rj['description']}\n"
-              elif action == "VARIATION":
-                  msg = "🎨 变换成功\n"
-                  msg += f"✨ {rj['description']}\n"
-              elif action == "DESCRIBE":
-                  msg = "🎨 转述成功\n"
-                  msg += f"✨ 内容: {rj['prompt']}\n"
-                  msg += f"✨ 内容(英文): {rj['promptEn']}\n"
-                  msg += f"✨ 地址: {rj['imageUrl']}\n"
-              if rj["imageUrl"]:
-                  return True, msg, rj["imageUrl"]
-              return True, msg, None
+            time.sleep(3)
+            res = requests.get(url, headers=self.headers)
+            rj = res.json()
+            status = rj["status"]
+          if not rj:
+            return False, "任务提交异常", None
+          if status == "SUCCESS":
+            msg = ""
+            startTime = ""
+            finishTime = ""
+            action = rj["action"]
+            if res.json()['startTime']:
+                startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['startTime']/1000))
+            if res.json()['finishTime']:
+                finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
+            if action == "IMAGINE":
+                msg = f"🎨 绘图成功\n"
+                msg += f"📨 ID: {id}\n"
+                msg += f"✨ 内容: {rj['prompt']}\n"
+                msg += f"✨ 内容(英文): {rj['promptEn']}\n"
+                msg += f"🪄 放大 U1～U4，变换 V1～V4\n"
+                msg += f"✏ 使用[{self.up_prefix[0]} 任务ID 操作]\n"
+                msg += f"{self.up_prefix[0]} {id} U1"
+            elif action == "UPSCALE":
+                msg = "🎨 放大成功\n"
+                msg += f"✨ {rj['description']}\n"
+            elif action == "VARIATION":
+                msg = "🎨 变换成功\n"
+                msg += f"✨ {rj['description']}\n"
+            elif action == "DESCRIBE":
+                msg = "🎨 转述成功\n"
+                msg += f"✨ 内容: {rj['prompt']}\n"
+                msg += f"✨ 内容(英文): {rj['promptEn']}\n"
+                msg += f"✨ 地址: {rj['imageUrl']}\n"
+            if startTime:
+                msg += f"开始时间：{startTime}\n"
+            if finishTime:
+                msg += f"完成时间：{finishTime}\n"
+            if rj["imageUrl"]:
+                return True, msg, rj["imageUrl"]
+            return True, msg, None
+          elif status == "FAILURE":
+            failReason = rj["failReason"]
+            return False, f"请求失败：{failReason}", None
           else:
-            return False, f"请求失败：{res.json()['failReason']}", None
+            return False, f"请求失败：服务异常", None
         except Exception as e:
             logger.exception(e)
             return False, "请求失败", None
+    
+    # 查询任务队列
+    def task_queue(self):
+        try:
+            url = self.baseUrl + f"/mj/task/queue"
+            res = requests.get(url, headers=self.headers)
+            rj = res.json()
+            if not rj:
+                return False, "暂无任务"
+            msg = f"✅ 查询成功\n"
+            for i in range(0, len(rj)):
+                msg += f"------------------------------\n"
+                msg += f"ID: {rj[i]['id']}\n"
+                msg += f"进度：{rj[i]['progress']}\n"
+                msg += f"内容：{rj[i]['prompt']}\n"
+                msg += f"状态：{self.status(rj[i]['status'])}\n"
+            mssg += f"------------------------------\n"
+            msg += f"共计：{len(rj)}个任务在执行\n"
+            return True, msg
+        except Exception as e:
+            logger.exception(e)
+            return False, "查询失败"
     
     def status(self, status):
         msg = ""
@@ -176,10 +223,14 @@ class _mjApi:
         help_text = "欢迎使用MJ机器人\n"
         help_text += f"这是一个AI绘画工具，只要输入想到的文字，通过人工智能产出相对应的图。\n"
         help_text += f"------------------------------\n"
-        help_text += f"🎨 AI绘图-使用说明：\n"
-        help_text += f"输入: /mj prompt\n"
-        help_text += f"prompt 即你提的绘画需求\n"
+        help_text += f"🎨 插件使用说明：\n"
+        help_text += f"(1) imagine想象绘图：输入: {self.imagine_prefix[0]} prompt\n"
+        help_text += f"(2) 图片变换：使用[{self.up_prefix[0]} + 任务ID操作]即可放大和变换imagine生成的图片\n"
+        help_text += f"(3) describe识图：在私信窗口直接发送图片即可帮你识别解析prompt描述\n"
+        help_text += f"(4) 任务查询：使用[{self.fetch_prefix[0]} + 任务ID操作]即可查询所提交的任务\n"
+        help_text += f"(5) 任务队列：使用[/queue]即可查询正在执行中的任务队列\n"
         help_text += f"------------------------------\n"
+        help_text += f"Tips: prompt 即你提的绘画描述\n"
         help_text += f"📕 prompt附加参数 \n"
         help_text += f"1.解释: 在prompt后携带的参数, 可以使你的绘画更别具一格\n"
         help_text += f"2.示例: /mj prompt --ar 16:9\n"
