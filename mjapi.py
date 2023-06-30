@@ -133,7 +133,7 @@ class _mjApi:
             status = ""
             rj = ""
             logger.debug("开始轮询任务结果")
-            while status != "SUCCESS" or status != "FAILURE":
+            while status != "SUCCESS" and status != "FAILURE":
                 time.sleep(3)
                 res = requests.get(url, headers=self.headers)
                 rj = res.json()
