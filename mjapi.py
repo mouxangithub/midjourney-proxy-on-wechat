@@ -189,16 +189,17 @@ class _mjApi:
             url = self.baseUrl + f"/mj/task/queue"
             res = requests.get(url, headers=self.headers)
             rj = res.json()
-            if not rj:
-                return False, "暂无任务"
             msg = f"✅ 查询成功\n"
+            if not rj:
+                msg += "暂无执行中的任务"
+                return True, msg
             for i in range(0, len(rj)):
                 msg += f"------------------------------\n"
                 msg += f"ID: {rj[i]['id']}\n"
                 msg += f"进度：{rj[i]['progress']}\n"
                 msg += f"内容：{rj[i]['prompt']}\n"
                 msg += f"状态：{self.status(rj[i]['status'])}\n"
-            mssg += f"------------------------------\n"
+            msg += f"------------------------------\n"
             msg += f"共计：{len(rj)}个任务在执行\n"
             return True, msg
         except Exception as e:
