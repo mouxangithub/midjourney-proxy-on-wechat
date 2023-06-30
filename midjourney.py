@@ -214,7 +214,7 @@ class MidJourney(Plugin):
                 if length < 2:
                     reply = Reply(ReplyType.TEXT, "请再发送一张或多张图片")
                 else:
-                    reply = Reply(ReplyType.TEXT, f"您已发送{length}张图片，可以发送更多图片或者发送[/done]开始合成")
+                    reply = Reply(ReplyType.TEXT, f"您已发送{length}张图片，可以发送更多图片或者发送[/end]开始合成")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -330,7 +330,7 @@ class MidJourney(Plugin):
                 self.env_detection(e_context)
                 logger.debug("[MJ] /blend bprefix={} bq={}".format(bprefix,bq))
                 self.sessions[sessionid] = _imgCache(bot, sessionid, "blend", bq)
-                reply = Reply(ReplyType.TEXT, "请发送两张以上的图片，然后输入['/done']结束")
+                reply = Reply(ReplyType.TEXT, "请发送两张以上的图片，然后输入['/end']结束")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -342,7 +342,7 @@ class MidJourney(Plugin):
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
-            elif content == "/done":
+            elif content == "/end":
                 self.env_detection(e_context)
                 # 从会话中获取缓存的图片
                 img_cache = self.sessions[sessionid].get_cache()
@@ -354,7 +354,7 @@ class MidJourney(Plugin):
                 elif length > 2:
                     reply = Reply(ReplyType.TEXT, "请再发送一张图片方可完成混图")
                 else:
-                    logger.debug("[MJ] /done")
+                    logger.debug("[MJ] /end")
                     status, msg, id = self.mj.blend(img_cache["base64Array"], prompt)
                     if status:
                         self.sendMsg(channel, context, ReplyType.TEXT, msg)

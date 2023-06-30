@@ -305,7 +305,7 @@ class _imgCache:
             "instruct": self.instruct if self.instruct else "",
             "prompt": self.prompt if self.prompt else "",
             "base64": self.base64_array[0] if self.base64_array else "",
-            "base64Array": self.base64_array[0] if self.base64_array else []
+            "base64Array": self.base64_array if self.base64_array else []
         }
 
     def action(self, base64):
