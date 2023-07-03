@@ -23,6 +23,22 @@ class _mjApi:
         if describe_prefix:
             self.describe_prefix = describe_prefix
     
+    def subTip(self, res):
+        rj = res.json()
+        if not rj:
+            return False, "MJ服务异常", ""
+        code = rj["code"]
+        id = rj['result']
+        if code == 1:
+            msg = "✅ 您的任务已提交\n"
+            msg += f"🚀 正在快速处理中，请稍后\n"
+            msg += f"📨 ID: {id}\n"
+            msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
+            msg += f"{self.fetch_prefix[0]} {id}"
+            return True, msg, rj["result"]
+        else:
+            return False, rj['description'], ""
+    
     # 图片想象接口
     def imagine(self, text, base64=""):
         try:
@@ -32,19 +48,7 @@ class _mjApi:
                 "base64": base64
             }
             res = requests.post(url, json=data, headers=self.headers)
-            rj = res.json()
-            if not rj:
-                return False, "MJ服务异常", None
-            code = rj["code"]
-            if code == 1:
-                msg = "✅ 您的任务已提交\n"
-                msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 ID: {rj['result']}\n"
-                msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-                msg += f"{self.fetch_prefix[0]} {rj['result']}"
-                return True, msg, rj["result"]
-            else:
-                return False, rj["failReason"], None
+            return self.subTip(res)
         except Exception as e:
             logger.exception(e)
             return False, "任务提交失败", None
@@ -55,19 +59,20 @@ class _mjApi:
             url = self.baseUrl + "/mj/submit/simple-change"
             data = {"content": content}
             res = requests.post(url, json=data, headers=self.headers)
-            rj = res.json()
-            if not rj:
-                return False, "MJ服务异常", None
-            code = rj["code"]
-            if code == 1:
-                msg = "✅ 您的任务已提交\n"
-                msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 ID: {rj['result']}\n"
-                msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-                msg += f"{self.fetch_prefix[0]} {rj['result']}"
-                return True, msg, rj["result"]
-            else:
-                return False, f"任务提交失败：{rj['failReason']}", None
+            return self.subTip(res)
+        except Exception as e:
+            logger.exception(e)
+            return False, "任务提交失败", None
+    
+    def reroll(self, taskId):
+        try:
+            url = self.baseUrl + "/mj/submit/change"
+            data = {
+                "taskId": taskId,
+                "action": "REROLL"
+            }
+            res = requests.post(url, json=data, headers=self.headers)
+            return self.subTip(res)
         except Exception as e:
             logger.exception(e)
             return False, "任务提交失败", None
@@ -82,19 +87,7 @@ class _mjApi:
             if dimensions:
                 data["dimensions"] = dimensions
             res = requests.post(url, json=data, headers=self.headers)
-            rj = res.json()
-            if not rj:
-                return False, "MJ服务异常", None
-            code = rj["code"]
-            if code == 1:
-                msg = "✅ 您的任务已提交\n"
-                msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 ID: {rj['result']}\n"
-                msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-                msg += f"{self.fetch_prefix[0]} {rj['result']}"
-                return True, msg, rj["result"]
-            else:
-                return False, f"任务提交失败：{rj['failReason']}", None
+            return self.subTip(res)
         except Exception as e:
             logger.exception(e)
             return False, "任务提交失败", None
@@ -105,19 +98,7 @@ class _mjApi:
             url = self.baseUrl + "/mj/submit/describe"
             data = {"base64": base64}
             res = requests.post(url, json=data, headers=self.headers)
-            rj = res.json()
-            if not rj:
-                return False, "MJ服务异常", None
-            code = rj["code"]
-            if code == 1:
-                msg = "✅ 您的任务已提交\n"
-                msg += f"🚀 正在快速处理中，请稍后\n"
-                msg += f"📨 ID: {rj['result']}\n"
-                msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-                msg += f"{self.fetch_prefix[0]} {rj['result']}"
-                return True, msg, rj["result"]
-            else:
-                return False, f"任务提交失败：{rj['failReason']}", None
+            return self.subTip(res)
         except Exception as e:
             logger.exception(e)
             return False, "任务提交失败", None
@@ -133,26 +114,29 @@ class _mjApi:
             status = rj['status']
             startTime = ""
             finishTime = ""
+            imageUrl = ""
             if rj['startTime']:
                 startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['startTime']/1000))
             if rj['finishTime']:
                 finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['finishTime']/1000))
             msg = "✅ 查询成功\n"
+            msg += f"------------------------------\n"
             msg += f"ID: {rj['id']}\n"
             msg += f"进度：{rj['progress']}\n"
-            msg += f"内容：{rj['prompt']}\n"
-            msg += f"内容(英文)：{rj['promptEn']}\n"
             msg += f"状态：{self.status(status)}\n"
+            msg += f"内容：{rj['prompt']}\n"
+            msg += f"描述：{rj['description']}\n"
             if rj['failReason']:
                 msg += f"失败原因：{rj['failReason']}\n"
+            if rj['imageUrl']:
+                msg += f"图片地址: {rj['imageUrl']}\n"
+                imageUrl = rj['imageUrl']
             if startTime:
                 msg += f"开始时间：{startTime}\n"
             if finishTime:
                 msg += f"完成时间：{finishTime}\n"
-            if rj['imageUrl']:
-                msg += f"✨ 图片地址: {rj['imageUrl']}\n"
-                return True, msg, rj['imageUrl']
-            return True, msg, None
+            msg += f"------------------------------\n"
+            return True, msg, imageUrl
         except Exception as e:
             logger.exception(e)
             return False, "查询失败", None
@@ -176,45 +160,46 @@ class _mjApi:
                 msg = ""
                 startTime = ""
                 finishTime = ""
+                imageUrl = ""
                 action = rj["action"]
-                if res.json()['startTime']:
-                    startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['startTime']/1000))
-                if res.json()['finishTime']:
-                    finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
+                msg += f"------------------------------\n"
                 if action == "IMAGINE":
                     msg = f"🎨 绘图成功\n"
-                    msg += f"📨 ID: {id}\n"
-                    msg += f"✨ 内容: {rj['prompt']}\n"
-                    msg += f"✨ 内容(英文): {rj['promptEn']}\n"
-                    msg += f"🪄 放大 U1～U4，变换 V1～V4\n"
-                    msg += f"✏ 使用[{self.up_prefix[0]} 任务ID 操作]\n"
-                    msg += f"{self.up_prefix[0]} {id} U1"
-                elif action == "UPSCALE":
+                elif  action == "UPSCALE":
                     msg = "🎨 放大成功\n"
-                    msg += f"✨ {rj['description']}\n"
                 elif action == "VARIATION":
                     msg = "🎨 变换成功\n"
-                    msg += f"✨ {rj['description']}\n"
                 elif action == "DESCRIBE":
                     msg = "🎨 转述成功\n"
-                    msg += f"✨ 内容: {rj['prompt']}\n"
-                    msg += f"✨ 内容(英文): {rj['promptEn']}\n"
-                    msg += f"✨ 地址: {rj['imageUrl']}\n"
-                if startTime:
+                elif action == "BLEND":
+                    msg = "🎨 混合绘制成功\n"
+                elif action == "REROLL":
+                    msg = "🎨 重新绘制成功\n"
+                msg += f"📨 ID: {id}\n"
+                msg += f"✨ 内容: {rj['prompt']}\n"
+                msg += f"✨ 描述：{rj['description']}\n"
+                if action == "IMAGINE" or action == "BLEND" or action == "REROLL":
+                    msg += f"🪄 放大 U1～U4，变换 V1～V4：使用[{self.up_prefix[0]} + 任务ID\n"
+                    msg += f"✏ 例如：{self.up_prefix[0]} {id} U1\n"
+                if rj['imageUrl']:
+                    msg += f"图片地址: {rj['imageUrl']}\n"
+                    imageUrl = rj['imageUrl']
+                if res.json()['startTime']:
+                    startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['startTime']/1000))
                     msg += f"开始时间：{startTime}\n"
-                if finishTime:
-                    msg += f"完成时间：{finishTime}"
-                if rj["imageUrl"]:
-                    return True, msg, rj["imageUrl"]
-                return True, msg, None
+                if res.json()['finishTime']:
+                    finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(res.json()['finishTime']/1000))
+                    msg += f"完成时间：{finishTime}\n"
+                msg += f"------------------------------\n"
+                return True, msg, imageUrl
             elif status == "FAILURE":
                 failReason = rj["failReason"]
-                return False, f"请求失败：{failReason}", None
+                return False, f"请求失败：{failReason}", ""
             else:
-                return False, f"请求失败：服务异常", None
+                return False, f"请求失败：服务异常", ""
         except Exception as e:
             logger.exception(e)
-            return False, "请求失败", None
+            return False, "请求失败", ""
     
     # 查询任务队列
     def task_queue(self):
@@ -230,9 +215,13 @@ class _mjApi:
                 msg += f"------------------------------\n"
                 msg += f"ID: {rj[i]['id']}\n"
                 msg += f"进度：{rj[i]['progress']}\n"
+                msg += f"状态：{self.status(rj[i]['status'])}\n"
                 msg += f"内容：{rj[i]['prompt']}\n"
                 msg += f"描述：{rj[i]['description']}\n"
-                msg += f"状态：{self.status(rj[i]['status'])}\n"
+                if rj[i]['failReason']:
+                    msg += f"失败原因：{rj[i]['failReason']}\n"
+                if rj[i]['imageUrl']:
+                    msg += f"图片地址: {rj[i]['imageUrl']}\n"
                 startTime = ""
                 if rj[i]['startTime']:
                     startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj[i]['startTime']/1000))
@@ -286,36 +275,3 @@ class _mjApi:
         help_text += f"5. --style 风格 (4a,4b,4c)v4可用 (expressive,cute)niji5可用\n"
         help_text += f"6. --s 风格化 1-1000 (625-60000)v3"
         return help_text
-
-class _imgCache:
-    def __init__(self, bot, sessionid, instruct, prompt):
-        self.cache = {}
-        self.bot = bot
-        self.sessionid = sessionid
-        bot.sessions.clear_session(sessionid)
-        self.instruct = instruct
-        self.prompt = prompt
-        self.base64Array = []
-
-    def reset(self):
-        self.bot.sessions.clear_session(self.sessionid)
-        self.instruct = ""
-        self.prompt = ""
-        self.base64Array = []
-    
-    def get_cache(self):
-        return {
-            "instruct": self.instruct if self.instruct else "",
-            "prompt": self.prompt if self.prompt else "",
-            "base64": self.base64Array[len(self.base64Array) - 1] if self.base64Array else "",
-            "base64Array": self.base64Array if self.base64Array else []
-        }
-
-    def action(self, base64):
-        self.base64Array.append(base64)
-        return {
-            "instruct": self.instruct,
-            "prompt": self.prompt,
-            "base64": base64,
-            "base64Array": self.base64Array
-        }

@@ -1,10 +1,10 @@
 {
-  "mj_url": "",
-  "mj_api_secret": "",
-  "imagine_prefix": "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]",
-  "fetch_prefix": "[\"/f\", \"/fetch\"]",
-  "up_prefix": "[\"/u\", \"/up\"]",
-  "pad_prefix": "[\"/p\", \"/pad\"]",
-  "blend_prefix": "[\"/b\", \"/blend\"]",
-  "describe_prefix": "[\"/d\", \"/describe\"]"
+    "mj_url": "",
+    "mj_api_secret": "",
+    "imagine_prefix": "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]",
+    "fetch_prefix": "[\"/f\", \"/fetch\"]",
+    "up_prefix": "[\"/u\", \"/up\"]",
+    "pad_prefix": "[\"/p\", \"/pad\"]",
+    "blend_prefix": "[\"/b\", \"/blend\"]",
+    "describe_prefix": "[\"/d\", \"/describe\"]"
 }
