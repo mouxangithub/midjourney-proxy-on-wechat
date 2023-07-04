@@ -141,6 +141,10 @@ class MidJourney(Plugin):
         
         self.mj_url = gconf["mj_url"]
         self.mj_api_secret = gconf["mj_api_secret"]
+        self.mj_admin_password = gconf["mj_admin_password"]
+        self.mj_type = gconf["mj_type"]
+        self.mj_groups = gconf["mj_groups"]
+        self.mj_users = gconf["mj_users"]
 
         if not gconf["imagine_prefix"]:
             self.imagine_prefix = ["/mj", "/imagine", "/img"]
@@ -166,6 +170,14 @@ class MidJourney(Plugin):
             self.describe_prefix = ["/d", "/describe"]
         else:
             self.describe_prefix = eval(gconf["describe_prefix"])
+        if not gconf["queue_prefix"]:
+            self.queue_prefix = ["/q", "/queue"]
+        else:
+            self.queue_prefix = eval(gconf["queue_prefix"])
+        if not gconf["end_prefix"]:
+            self.end_prefix = ["/e", "/end"]
+        else:
+            self.end_prefix = eval(gconf["end_prefix"])
         
         # 目前没有设计session过期事件，这里先暂时使用过期字典
         if conf().get("expires_in_seconds"):

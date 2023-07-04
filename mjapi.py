@@ -30,15 +30,15 @@ class _mjApi:
     def subTip(self, res):
         rj = res.json()
         if not rj:
-            return False, "MJ服务异常", ""
+            return False, "❌ MJ服务异常", ""
         code = rj["code"]
         id = rj['result']
         if code == 1:
             msg = "✅ 您的任务已提交\n"
             msg += f"🚀 正在快速处理中，请稍后\n"
             msg += f"📨 ID: {id}\n"
-            msg += f"✏  使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
-            msg += f"{self.fetch_prefix[0]} {id}"
+            msg += f"✍️ 使用[{self.fetch_prefix[0]} + 任务ID操作]\n"
+            msg += f"✍️ {self.fetch_prefix[0]} {id}"
             return True, msg, rj["result"]
         else:
             return False, rj['description'], ""
@@ -57,7 +57,7 @@ class _mjApi:
             return self.subTip(res)
         except Exception as e:
             logger.exception(e)
-            return False, "任务提交失败", None
+            return False, "❌ 任务提交失败", None
     
     # 放大/变换图片接口
     def simpleChange(self, content):
@@ -70,7 +70,7 @@ class _mjApi:
             return self.subTip(res)
         except Exception as e:
             logger.exception(e)
-            return False, "任务提交失败", None
+            return False, "❌ 任务提交失败", None
     
     def reroll(self, taskId):
         try:
@@ -85,7 +85,7 @@ class _mjApi:
             return self.subTip(res)
         except Exception as e:
             logger.exception(e)
-            return False, "任务提交失败", None
+            return False, "❌ 任务提交失败", None
     
     # 混合图片接口
     def blend(self, base64Array, dimensions=""):
@@ -102,7 +102,7 @@ class _mjApi:
             return self.subTip(res)
         except Exception as e:
             logger.exception(e)
-            return False, "任务提交失败", None
+            return False, "❌ 任务提交失败", None
     
     # 识图接口
     def describe(self, base64):
@@ -115,7 +115,7 @@ class _mjApi:
             return self.subTip(res)
         except Exception as e:
             logger.exception(e)
-            return False, "任务提交失败", None
+            return False, "❌ 任务提交失败", None
     
     # 查询提交的任务信息
     def fetch(self, id):
@@ -124,7 +124,7 @@ class _mjApi:
             res = requests.get(url, headers=self.headers)
             rj = res.json()
             if not rj:
-                return False, "查询任务不存在", None
+                return False, "❌ 查询任务不存在", None
             user = None
             ruser = None
             if self.user:
@@ -133,7 +133,7 @@ class _mjApi:
                 ruser = json.loads(rj['state'])
             if user and ruser:
                 if user['user_id'] != ruser['user_id']:
-                    return False, "该任务不属于您，您无权查看", None
+                    return False, "❌ 该任务不属于您提交，您无权查看", None
             status = rj['status']
             startTime = ""
             finishTime = ""
@@ -146,28 +146,28 @@ class _mjApi:
                 timeup = (rj['finishTime'] - rj['startTime'])/1000
             msg = "✅ 查询成功\n"
             msg += f"------------------------------\n"
-            msg += f"ID: {rj['id']}\n"
-            msg += f"进度：{rj['progress']}\n"
-            msg += f"状态：{self.status(status)}\n"
+            msg += f"📨 ID: {rj['id']}\n"
+            msg += f"🚀 进度：{rj['progress']}\n"
+            msg += f"⌛ 状态：{self.status(status)}\n"
             if rj['finishTime']:
-                msg += f"耗时：{timeup}秒\n"
-            msg += f"描述：{rj['description']}\n"
+                msg += f"⏱ 耗时：{timeup}秒\n"
+            msg += f"✨ 描述：{rj['description']}\n"
             if ruser and ruser["user_nickname"]:
-                msg += f"提交人：{ruser['user_nickname']}\n"
+                msg += f"🙋‍♂️ 提交人：{ruser['user_nickname']}\n"
             if rj['failReason']:
-                msg += f"失败原因：{rj['failReason']}\n"
+                msg += f"❌ 失败原因：{rj['failReason']}\n"
             if rj['imageUrl']:
-                msg += f"图片地址: {rj['imageUrl']}\n"
+                msg += f"🎬 图片地址: {rj['imageUrl']}\n"
                 imageUrl = rj['imageUrl']
             if startTime:
-                msg += f"开始时间：{startTime}\n"
+                msg += f"⏱ 开始时间：{startTime}\n"
             if finishTime:
-                msg += f"完成时间：{finishTime}\n"
-            msg += f"------------------------------\n"
+                msg += f"⏱ 完成时间：{finishTime}\n"
+            msg += f"------------------------------"
             return True, msg, imageUrl
         except Exception as e:
             logger.exception(e)
-            return False, "查询失败", None
+            return False, "❌ 查询失败", None
     
     # 轮询获取任务结果
     def get_f_img(self, id):
@@ -181,7 +181,7 @@ class _mjApi:
                 rj = res.json()
                 status = rj["status"]
             if not rj:
-                return False, "任务提交异常", None
+                return False, "❌ 任务提交异常", None
             if status == "SUCCESS":
                 msg = ""
                 startTime = ""
@@ -207,34 +207,34 @@ class _mjApi:
                     msg += "🎨 混合绘制成功\n"
                 elif action == "REROLL":
                     msg += "🎨 重新绘制成功\n"
-                if rj['finishTime']:
-                    msg += f"⏱ 耗时：{timeup}秒\n"
                 msg += f"📨 ID: {id}\n"
                 msg += f"✨ 描述：{rj['description']}\n"
+                if rj['finishTime']:
+                    msg += f"⏱ 耗时：{timeup}秒\n"
                 if action == "IMAGINE" or action == "BLEND" or action == "REROLL":
                     msg += f"🪄 放大 U1～U4，变换 V1～V4：使用[{self.up_prefix[0]} + 任务ID\n"
-                    msg += f"✏ 例如：{self.up_prefix[0]} {id} U1\n"
+                    msg += f"✍️ 例如：{self.up_prefix[0]} {id} U1\n"
                 if ruser and ruser["user_nickname"]:
-                    msg += f"提交人：{ruser['user_nickname']}\n"
+                    msg += f"🙋‍♂️ 提交人：{ruser['user_nickname']}\n"
                 if rj['imageUrl']:
-                    msg += f"图片地址: {rj['imageUrl']}\n"
+                    msg += f"🎬 图片地址: {rj['imageUrl']}\n"
                     imageUrl = rj['imageUrl']
                 if rj['startTime']:
                     startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['startTime']/1000))
-                    msg += f"开始时间：{startTime}\n"
+                    msg += f"⏱ 开始时间：{startTime}\n"
                 if rj['finishTime']:
                     finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['finishTime']/1000))
-                    msg += f"完成时间：{finishTime}\n"
+                    msg += f"⏱ 完成时间：{finishTime}\n"
                 msg += f"------------------------------"
                 return True, msg, imageUrl
             elif status == "FAILURE":
                 failReason = rj["failReason"]
-                return False, f"请求失败：{failReason}", ""
+                return False, f"❌ 请求失败：{failReason}", ""
             else:
-                return False, f"请求失败：服务异常", ""
+                return False, f"❌ 请求失败：服务异常", ""
         except Exception as e:
             logger.exception(e)
-            return False, "请求失败", ""
+            return False, "❌ 请求失败", ""
     
     # 查询任务队列
     def task_queue(self):
@@ -244,7 +244,7 @@ class _mjApi:
             rj = res.json()
             msg = f"✅ 查询成功\n"
             if not rj:
-                msg += "暂无执行中的任务"
+                msg += "✅ 暂无执行中的任务"
                 return True, msg
             user = None
             ruser = None
@@ -255,32 +255,32 @@ class _mjApi:
                     ruser = json.loads(rj[i]['state'])
                 if (ruser and user and user['user_id'] == ruser['user_id']) or not ruser:
                     msg += f"------------------------------\n"
-                    msg += f"ID: {rj[i]['id']}\n"
-                    msg += f"进度：{rj[i]['progress']}\n"
-                    msg += f"状态：{self.status(rj[i]['status'])}\n"
-                    msg += f"描述：{rj[i]['description']}\n"
+                    msg += f"📨 ID: {rj[i]['id']}\n"
+                    msg += f"🚀 进度：{rj[i]['progress']}\n"
+                    msg += f"⌛ 状态：{self.status(rj[i]['status'])}\n"
+                    msg += f"✨ 描述：{rj[i]['description']}\n"
                     if ruser and ruser["user_nickname"]:
-                        msg += f"提交人：{ruser['user_nickname']}\n"
+                        msg += f"🙋‍♂️ 提交人：{ruser['user_nickname']}\n"
                     if rj[i]['failReason']:
-                        msg += f"失败原因：{rj[i]['failReason']}\n"
+                        msg += f"❌ 失败原因：{rj[i]['failReason']}\n"
                     if rj[i]['imageUrl']:
-                        msg += f"图片地址: {rj[i]['imageUrl']}\n"
+                        msg += f"🎬 图片地址: {rj[i]['imageUrl']}\n"
                     startTime = ""
                     if rj[i]['startTime']:
                         startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj[i]['startTime']/1000))
                     if startTime:
-                        msg += f"开始时间：{startTime}\n"
+                        msg += f"⏱开始时间：{startTime}\n"
             msg += f"------------------------------\n"
             msg += f"共计：{len(rj)}个任务在执行"
             return True, msg
         except Exception as e:
             logger.exception(e)
-            return False, "查询失败"
+            return False, "❌ 查询失败"
     
     def status(self, status):
         msg = ""
         if status == "SUCCESS":
-            msg = "已成功"
+            msg = "已完成"
         elif status == "FAILURE":
             msg = "失败"
         elif status == "SUBMITTED":
