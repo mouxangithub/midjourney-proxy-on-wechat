@@ -1,5 +1,7 @@
 # encoding:utf-8
 import requests
+import random
+import string
 import os
 import io
 import json
@@ -7,7 +9,6 @@ import base64
 import plugins
 from bridge.context import ContextType
 from bridge.reply import Reply, ReplyType
-from common import const
 from common.log import logger
 from common.expired_dict import ExpiredDict
 from plugins import *
@@ -50,11 +51,31 @@ def write_file(path, content):
         json.dump(content, f, indent=4)
     return True
 
+ADMIN_COMMANDS = {
+    "set_mj_url": {
+        "alias": ["set_mj_url", "设置MJ服务地址"],
+        "args": ["mj_url"],
+        "desc": "设置MJ服务地址",
+    },
+    "stop_mj": {
+        "alias": ["stop_mj", "暂停MJ服务"],
+        "desc": "暂停MJ服务",
+    },
+    "enable_mj": {
+        "alias": ["enable_mj", "启用MJ服务"],
+        "desc": "启用MJ服务",
+    },
+    "clean_mj": {
+        "alias": ["clean_mj", "清空MJ缓存"],
+        "desc": "清空MJ缓存",
+    },
+}
+
 @plugins.register(
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.29",
+    version="1.0.30",
     author="mouxan",
     desire_priority=0
 )
@@ -65,12 +86,18 @@ class MidJourney(Plugin):
         gconf = {
             "mj_url": "",
             "mj_api_secret": "",
+            "mj_admin_password": "",
+            "mj_type": "all",
+            "mj_groups": [],
+            "mj_users": [],
             "imagine_prefix": "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]",
             "fetch_prefix": "[\"/f\", \"/fetch\"]",
             "up_prefix": "[\"/u\", \"/up\"]",
             "pad_prefix": "[\"/p\", \"/pad\"]",
             "blend_prefix": "[\"/b\", \"/blend\"]",
-            "describe_prefix": "[\"/d\", \"/describe\"]"
+            "describe_prefix": "[\"/d\", \"/describe\"]",
+            "queue_prefix": "[\"/q\", \"/queue\"]",
+            "end_prefix": "[\"/e\", \"/end\"]"
         }
 
         # 读取和写入配置文件
@@ -79,26 +106,38 @@ class MidJourney(Plugin):
         if not os.path.exists(config_path):
             config_path = os.path.join(curdir, "config.json.template")
         if os.environ.get("mj_url", None):
-            logger.info("使用的是环境变量配置")
             gconf = {
                 "mj_url": os.environ.get("mj_url", ""),
                 "mj_api_secret": os.environ.get("mj_api_secret", ""),
+                "mj_admin_password": os.environ.get("mj_admin_password", ""),
+                "mj_type": os.environ.get("using_type", "all"),
+                "mj_groups": os.environ.get("group", []),
+                "mj_users": [],
                 "imagine_prefix": os.environ.get("imagine_prefix", "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]"),
                 "fetch_prefix": os.environ.get("fetch_prefix", "[\"/f\", \"/fetch\"]"),
                 "up_prefix": os.environ.get("up_prefix", "[\"/u\", \"/up\"]"),
                 "pad_prefix": os.environ.get("pad_prefix", "[\"/p\", \"/pad\"]"),
                 "blend_prefix": os.environ.get("blend_prefix", "[\"/b\", \"/blend\"]"),
-                "describe_prefix": os.environ.get("describe_prefix", "[\"/d\", \"/describe\"]")
+                "describe_prefix": os.environ.get("describe_prefix", "[\"/d\", \"/describe\"]"),
+                "queue_prefix": os.environ.get("queue_prefix", "[\"/q\", \"/queue\"]"),
+                "end_prefix": os.environ.get("end_prefix", "[\"/e\", \"/end\"]")
             }
         else:
-            logger.info(f"使用的是插件目录下的配置：{config_path}")
             gconf = {**gconf, **json.loads(read_file(config_path))}
+        
+        # if gconf["password"] == "":
+        #     self.temp_password = "".join(random.sample(string.digits, 4))
+        #     logger.info("[MJ] 因未设置管理员密码，本次的临时密码为%s。" % self.temp_password)
+        # else:
+        #     self.temp_password = None
 
         if gconf["mj_url"] == "":
             logger.info("[MJ] 未设置[mj_url]，请前往环境变量进行配置或在该插件目录下的config.json进行配置。")
 
         # 重新写入配置文件
         write_file(config_path, gconf)
+
+        logger.info("[MJ] config={}".format(gconf))
         
         self.mj_url = gconf["mj_url"]
         self.mj_api_secret = gconf["mj_api_secret"]
@@ -138,7 +177,7 @@ class MidJourney(Plugin):
 
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
 
-        logger.info("[MJ] inited. mj_url={} mj_api_secret={}".format(self.mj_url, self.mj_api_secret))
+        logger.info("[MJ] inited")
 
     def on_handle_context(self, e_context: EventContext):
         if e_context["context"].type not in [
@@ -152,7 +191,19 @@ class MidJourney(Plugin):
         content = context.content
         msg: ChatMessage = context["msg"]
         sessionid = context["session_id"]
-        isgroup = e_context["context"].get("isgroup", False)
+        isgroup = context.get("isgroup", False)
+        userInfo = {
+            "user_id": msg.from_user_id,
+            "user_nickname": msg.from_user_nickname
+        }
+        if msg.actual_user_id:
+            userInfo["group_id"] = msg.from_user_id
+            userInfo["user_id"] = msg.actual_user_id
+        if msg.actual_user_nickname:
+            userInfo["group_name"] = msg.from_user_nickname
+            userInfo["user_nickname"] = msg.actual_user_nickname
+        self.mj.set_user(json.dumps(userInfo))
+
         reply = None
 
         # 图片

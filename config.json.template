@@ -1,10 +1,16 @@
 {
     "mj_url": "",
     "mj_api_secret": "",
+    "mj_admin_password": "",
+    "mj_type": "all",
+    "mj_groups": [],
+    "mj_users": [],
     "imagine_prefix": "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]",
     "fetch_prefix": "[\"/f\", \"/fetch\"]",
     "up_prefix": "[\"/u\", \"/up\"]",
     "pad_prefix": "[\"/p\", \"/pad\"]",
     "blend_prefix": "[\"/b\", \"/blend\"]",
-    "describe_prefix": "[\"/d\", \"/describe\"]"
+    "describe_prefix": "[\"/d\", \"/describe\"]",
+    "queue_prefix": "[\"/q\", \"/queue\"]",
+    "end_prefix": "[\"/e\", \"/end\"]"
 }
