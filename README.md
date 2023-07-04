@@ -2,8 +2,6 @@
 
 使用代理 MidJourney 的discord频道[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)的api在[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)进行请求绘图发送
 
-MidJourney知道吧，懂的都懂，不懂的就自己百度哈
-
 本插件依赖于[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)而开发的插件
 本插件基于[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，需要先部署该项目，起了该服务才能用接下来的mj_url进行配置，没有该服务无法使用
 
@@ -17,9 +15,10 @@ MidJourney知道吧，懂的都懂，不懂的就自己百度哈
 - [x] 绘图进度百分比查询
 - [x] 发送/queue 任务队列查询
 - [x] 解决webp图片无法发送问题
+- [x] 聊天窗口插件可发送['/mj_admin_password + 密码']认证管理员，通过管理员账号可输入['/set_mj_url + mj代理地址 + mj_api_secret请求头部(无可不配置)']进行配置mj服务地址，发送['/stop_mj','/enable_mj']可启用暂停MJ服务
 
 ## 后续对接计划
-- [ ] 聊天窗口插件可通过指令修改mj_url地址等配置
+- [ ] 聊天窗口插件可生成用户密钥(需管理员)，用户可通过设置用户密钥进行限制MJ服务使用对象，或配置mj_groups限制群聊使用
 - [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
 
 ## 使用说明

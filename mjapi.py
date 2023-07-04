@@ -4,7 +4,7 @@ import requests
 from common.log import logger
 
 class _mjApi:
-    def __init__(self, mj_url, mj_api_secret, imagine_prefix, fetch_prefix, up_prefix, pad_prefix, blend_prefix, describe_prefix):
+    def __init__(self, mj_url, mj_api_secret, imagine_prefix, fetch_prefix, up_prefix, pad_prefix, blend_prefix, describe_prefix, queue_prefix, end_prefix):
         self.baseUrl = mj_url
         self.headers = {
             "Content-Type": "application/json",
@@ -23,9 +23,21 @@ class _mjApi:
             self.blend_prefix = blend_prefix
         if describe_prefix:
             self.describe_prefix = describe_prefix
+        if queue_prefix:
+            self.queue_prefix = queue_prefix
+        if end_prefix:
+            self.end_prefix = end_prefix
     
     def set_user(self, user):
         self.user = user
+    
+    def set_mj(self, mj_url, mj_api_secret):
+        self.baseUrl = mj_url
+        self.headers = {
+            "Content-Type": "application/json",
+        }
+        if mj_api_secret:
+            self.headers["mj-api-secret"] = mj_api_secret
     
     def subTip(self, res):
         rj = res.json()
@@ -296,13 +308,13 @@ class _mjApi:
         help_text += f"这是一个AI绘画工具,只要输入想到的文字,通过人工智能产出相对应的图.\n"
         help_text += f"------------------------------\n"
         help_text += f"🎨 插件使用说明:\n"
-        help_text += f"(1) imagine想象:输入: {self.imagine_prefix[0]} prompt\n"
-        help_text += f"(2) imagine垫图:发送{self.pad_prefix[0]}配置的指令+prompt描述,然后发送一张图片进行生成（此方法不限群聊还是私聊方式）\n"
-        help_text += f"(3) 图片放大和变换:使用[{self.up_prefix[0]} + 任务ID操作]即可放大和变换imagine生成的图片\n"
-        help_text += f"(4) describe识图:在私信窗口直接发送图片即可帮你识别解析prompt描述,或发送{self.describe_prefix[0]}+图片(此方法不限聊天方式)亦可\n"
-        help_text += f"(5) blend混图:发送{self.blend_prefix[0]}配置的指令，然后发送多张图片进行混合（此方法不限群聊还是私聊方式）\n"
-        help_text += f"(6) 任务查询:使用[{self.fetch_prefix[0]} + 任务ID操作]即可查询所提交的任务\n"
-        help_text += f"(7) 任务队列:使用[/queue]即可查询正在执行中的任务队列\n"
+        help_text += f"(1) imagine想象:输入['{self.imagine_prefix[0]} + prompt描述']\n"
+        help_text += f"(2) imagine垫图:发送['{self.pad_prefix[0]} + prompt描述'],然后发送一张图片进行生成（此方法不限群聊还是私聊方式）\n"
+        help_text += f"(3) 图片放大和变换:使用['{self.up_prefix[0]} + 任务ID操作']即可放大和变换imagine生成的图片\n"
+        help_text += f"(4) describe识图:在私信窗口直接发送图片即可帮你识别解析prompt描述,或发送['{self.describe_prefix[0]}']+图片(此方法不限聊天方式)亦可\n"
+        help_text += f"(5) blend混图:发送['{self.blend_prefix[0]}']指令，然后发送多张图片最后发送['{self.end_prefix[0]}']进行混合（此方法不限群聊还是私聊方式）\n"
+        help_text += f"(6) 任务查询:使用['{self.fetch_prefix[0]} + 任务ID操作']即可查询所提交的任务\n"
+        help_text += f"(7) 任务队列:使用['{self.queue_prefix[0]}']即可查询正在执行中的任务队列\n"
         help_text += f"------------------------------\n"
         help_text += f"📕 prompt附加参数 \n"
         help_text += f"1.解释: 在prompt后携带的参数, 可以使你的绘画更别具一格\n"
