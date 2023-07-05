@@ -8,7 +8,7 @@
 ## 支持的平台
 - [x] 可接入个人微信聊天使用[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)
 - [x] 可接入企业微信应用使用[`企业微信应用号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatcom/README.md)
-- [x] 可接入微信公众号[`微信公众号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatmp/README.md)，但由于个人主体的微信订阅号由于无法通过微信认证，无法主动发出消息，只能被动回复，存在回复时间限制(最多只有15秒的自动回复时间窗口)，所以可能无法及时发送图片，只能通过查询接口去拿。
+- [x] 可接入微信公众号[`微信公众号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatmp/README.md)，但由于个人主体的微信订阅号由于无法通过微信认证，无法主动发出消息，只能被动回复，存在回复时间限制(最多只有15秒的自动回复时间窗口)，所以可能无法及时发送图片，只能通过查询接口去拿，建议不使用个人公众号。
 
 ## 已对接现有功能
 - [x] midjourney `imgine` 想象
