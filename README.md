@@ -45,14 +45,19 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 #installp https://github.com/mouxangithub/midjourney.git
 ## 第三步：前往插件目录/plugins/midjourney/config.json.template如果有config.json就直接改这个文件，加入下方配置
 {
-  "mj_url": "", // midjourney-proxy的服务地址
-  "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
-  "imagine_prefix": "[\"/i\", \"/mj\", \"/imagine\", \"/img\"]", // imagine画图触发前缀
-  "fetch_prefix": "[\"/f\", \"/fetch\"]", // fetch任务查询触发前缀
-  "up_prefix": "[\"/u\", \"/up\"]", // up图片放大和变换触发前缀
-  "pad_prefix": "[\"/p\", \"/pad\"]", // 垫图画图触发前缀
-  "blend_prefix": "[\"/b\", \"/blend\"]", // 混图画图触发前缀
-  "describe_prefix": "[\"/d\", \"/describe\"]" // 图生文触发前缀
+    "mj_url": "", // midjourney-proxy的服务地址
+    "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
+    "mj_tip": true, // 是否发送请求提示，让漫长的等待不会枯燥，如果嫌啰嗦可关闭，即：发送一些成功的内容
+    "mj_admin_password": "", // MJ管理员密码
+    "mj_admin_users": [], // 管理员用户，同godcmd
+    "imagine_prefix": "[\"/i\", \"/mj\"]", // imagine画图触发前缀
+    "fetch_prefix": "[\"/f\"]", // fetch任务查询触发前缀
+    "up_prefix": "[\"/u\"]", // up图片放大和变换触发前缀
+    "pad_prefix": "[\"/p\"]", // 垫图画图触发前缀
+    "blend_prefix": "[\"/b\"]", // 混图画图触发前缀
+    "describe_prefix": "[\"/d\"]", // 图生文触发前缀
+    "queue_prefix": "[\"/q\"]",  // 查询正在执行中任务触发前缀
+    "end_prefix": "[\"/e\"]"  // 结束存储打包发送任务（目前用于混图）触发前缀
 }
 ## 第四步：#scanp扫描插件，提示发现MidJourney插件即为成功
 #scanp
@@ -65,12 +70,15 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 ## 第一步：前往Variables配置下方环境变量
 mj_url= ""
 mj_api_secret= ""
+mj_tip=True
 imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]"
 fetch_prefix="[\"/fetch\", \"/ft\"]"
 up_prefix="[\"/u\", \"/up\"]"
 pad_prefix="[\"/p\", \"/pad\"]"
 blend_prefix="[\"/b\", \"/blend\"]"
 describe_prefix="[\"/d\", \"/describe\"]"
+queue_prefix="[\"/q\"]"
+end_prefix="[\"/e\"]"
 ## 第二步：重新部署redeploy
 ## 第三步：扫码登录进入聊天窗口，先认证管理员，如果是临时密码，请重启chatgpt-on-wechat前往logs查看，上方日志中有临时密码
 #auth＋密码
