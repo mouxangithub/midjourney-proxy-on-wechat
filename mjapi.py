@@ -157,7 +157,7 @@ class _mjApi:
                 finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['finishTime']/1000))
                 timeup = (rj['finishTime'] - rj['startTime'])/1000
             msg = "✅ 查询成功\n"
-            msg += f"------------------------------\n"
+            msg += f"-----------------------------\n"
             msg += f"📨 ID: {rj['id']}\n"
             msg += f"🚀 进度：{rj['progress']}\n"
             msg += f"⌛ 状态：{self.status(status)}\n"
@@ -175,7 +175,7 @@ class _mjApi:
                 msg += f"⏱ 开始时间：{startTime}\n"
             if finishTime:
                 msg += f"⏱ 完成时间：{finishTime}\n"
-            msg += f"------------------------------"
+            msg += f"-----------------------------"
             return True, msg, imageUrl
         except Exception as e:
             logger.exception(e)
@@ -204,7 +204,7 @@ class _mjApi:
                 timeup = 0
                 if rj['state']:
                     ruser = json.loads(rj['state'])
-                msg += f"------------------------------\n"
+                msg += f"-----------------------------\n"
                 if rj['finishTime']:
                     timeup = (rj['finishTime'] - rj['startTime'])/1000
                 if action == "IMAGINE":
@@ -237,7 +237,7 @@ class _mjApi:
                 if rj['finishTime']:
                     finishTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['finishTime']/1000))
                     msg += f"⏱ 完成时间：{finishTime}\n"
-                msg += f"------------------------------"
+                msg += f"-----------------------------"
                 return True, msg, imageUrl
             elif status == "FAILURE":
                 failReason = rj["failReason"]
@@ -266,7 +266,7 @@ class _mjApi:
                 if rj[i]['state']:
                     ruser = json.loads(rj[i]['state'])
                 if (ruser and user and user['user_id'] == ruser['user_id']) or not ruser:
-                    msg += f"------------------------------\n"
+                    msg += f"-----------------------------\n"
                     msg += f"📨 ID: {rj[i]['id']}\n"
                     msg += f"🚀 进度：{rj[i]['progress']}\n"
                     msg += f"⌛ 状态：{self.status(rj[i]['status'])}\n"
@@ -282,7 +282,7 @@ class _mjApi:
                         startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj[i]['startTime']/1000))
                     if startTime:
                         msg += f"⏱开始时间：{startTime}\n"
-            msg += f"------------------------------\n"
+            msg += f"-----------------------------\n"
             msg += f"共计：{len(rj)}个任务在执行"
             return True, msg
         except Exception as e:
@@ -306,7 +306,7 @@ class _mjApi:
     def help_text(self):
         help_text = "欢迎使用MJ绘画机器人\n"
         help_text += f"这是一个AI绘画工具,只要输入想到的文字,通过人工智能产出相对应的图.\n"
-        help_text += f"------------------------------\n"
+        help_text += f"-----------------------------\n"
         help_text += f"🎨 插件使用说明:\n"
         help_text += f"(1) imagine想象:输入['{self.imagine_prefix[0]} + prompt描述']\n"
         help_text += f"(2) imagine垫图:发送['{self.pad_prefix[0]} + prompt描述'],然后发送一张图片进行生成（此方法不限群聊还是私聊方式）\n"
@@ -315,12 +315,12 @@ class _mjApi:
         help_text += f"(5) blend混图:发送['{self.blend_prefix[0]}']指令，然后发送多张图片最后发送['{self.end_prefix[0]}']进行混合（此方法不限群聊还是私聊方式）\n"
         help_text += f"(6) 任务查询:使用['{self.fetch_prefix[0]} + 任务ID操作']即可查询所提交的任务\n"
         help_text += f"(7) 任务队列:使用['{self.queue_prefix[0]}']即可查询正在执行中的任务队列\n"
-        help_text += f"------------------------------\n"
+        help_text += f"-----------------------------\n"
         help_text += f"📕 prompt附加参数 \n"
         help_text += f"1.解释: 在prompt后携带的参数, 可以使你的绘画更别具一格\n"
         help_text += f"2.示例: {self.imagine_prefix[0]} prompt --ar 16:9\n"
         help_text += f"3.使用: 需要使用--key value, key和value空格隔开, 多个附加参数空格隔开\n"
-        help_text += f"------------------------------\n"
+        help_text += f"-----------------------------\n"
         help_text += f"📗 附加参数列表\n"
         help_text += f"1. --v 版本 1,2,3,4,5,5.1,5.2 默认5.2, 不可与niji同用\n"
         help_text += f"2. --niji 动漫风 4或5 默认4, 不可与v同用\n"
@@ -333,6 +333,6 @@ class _mjApi:
         help_text += f"9. --no 负面提示（--no plants 会尝试从图像中删除植物）\n"
         help_text += f"10. --q 清晰度 .25 .5 1 2 分别代表: 一般,清晰,高清,超高清,默认1\n"
         help_text += f"11. --weird 0-3000 使用实验参数探索非常规美学。此参数为生成的图像引入了古怪和另类的品质，从而产生独特且意想不到的结果\n"
-        help_text += f"------------------------------\n"
+        help_text += f"-----------------------------\n"
         help_text += f"其他参数可前往文档查看:https://docs.midjourney.com/docs/parameter-list"
         return help_text
