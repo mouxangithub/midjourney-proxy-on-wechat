@@ -256,7 +256,7 @@ class _mjApi:
             rj = res.json()
             msg = f"✅ 查询成功\n"
             if not rj:
-                msg += "✅ 暂无执行中的任务"
+                msg += "❌ 暂无执行中的任务"
                 return True, msg
             user = None
             ruser = None
@@ -304,7 +304,7 @@ class _mjApi:
         return msg
     
     def help_text(self):
-        help_text = "欢迎使用MJ机器人\n"
+        help_text = "欢迎使用MJ绘画机器人\n"
         help_text += f"这是一个AI绘画工具,只要输入想到的文字,通过人工智能产出相对应的图.\n"
         help_text += f"------------------------------\n"
         help_text += f"🎨 插件使用说明:\n"

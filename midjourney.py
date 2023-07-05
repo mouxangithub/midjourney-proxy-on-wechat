@@ -243,6 +243,11 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif cmd == "set_mj_admin_password":
+                if isadmin == False:
+                    reply = Reply(ReplyType.ERROR, "[MJ] 您没有权限执行该操作,请先输入$mj_admin_password+密码进行认证")
+                    e_context["reply"] = reply
+                    e_context.action = EventAction.BREAK_PASS
+                    return
                 if len(args) != 1:
                     reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的密码")
                     e_context["reply"] = reply
@@ -253,7 +258,7 @@ class MidJourney(Plugin):
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
-            elif cmd == "set_mj_url" or cmd == "stop_mj" or cmd == "enable_mj":
+            elif cmd == "set_mj_url" or cmd == "stop_mj" or cmd == "enable_mj" or cmd == "clean_mj":
                 if isadmin == False:
                     reply = Reply(ReplyType.ERROR, "[MJ] 您没有权限执行该操作,请先输入$mj_admin_password+密码进行认证")
                     e_context["reply"] = reply
@@ -265,6 +270,11 @@ class MidJourney(Plugin):
                 elif cmd == "enable_mj":
                     self.ismj = True
                     reply = Reply(ReplyType.INFO, "[MJ] 服务已恢复")
+                elif cmd == "clean_mj":
+                    if sessionid in self.sessions:
+                        self.sessions[sessionid].reset()
+                        del self.sessions[sessionid]
+                    reply = Reply(ReplyType.INFO, "[MJ] 缓存已清理")
                 else:
                     if len(args) != 1:
                         reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的服务器地址")
