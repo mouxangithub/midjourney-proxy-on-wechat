@@ -10,7 +10,7 @@
 
 （2）可接入企业微信应用使用[`企业微信应用号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatcom/README.md)
 
-（3）可接入微信公众号[`微信公众号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatmp/README.md)，但由于“人主体的微信订阅号由于无法通过微信认证，存在回复时间限制”，所以个人微信公众号可能无法发送任务提交成功等提示，只能发送最终的图片成果
+（3）可接入微信公众号[`微信公众号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatmp/README.md)，但由于“人主体的微信订阅号由于无法通过微信认证，存在回复时间限制”，所以个人微信公众号可能无法发送任务提交成功等提示，只能发送最终的图片成果(个人微信公众号需配置mj_tip为false)
 
 ## 已对接现有功能
 - [x] midjourney `imgine` 想象
@@ -22,6 +22,7 @@
 - [x] 绘图进度百分比查询
 - [x] 发送/queue 任务队列查询
 - [x] 解决webp图片无法发送问题
+- [x] mj_tip可关闭多条消息发送（最终只发图片或者描述）
 - [x] 聊天窗口插件可发送['/mj_admin_password + 密码']认证管理员，通过管理员账号可输入['/set_mj_url + mj代理地址 + mj_api_secret请求头部(无可不配置)']进行配置mj服务地址，发送['/stop_mj','/enable_mj']可启用暂停MJ服务
 
 ## 后续对接计划

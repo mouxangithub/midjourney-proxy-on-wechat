@@ -76,7 +76,7 @@ ADMIN_COMMANDS = {
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.31",
+    version="1.0.32",
     author="mouxan",
     desire_priority=0
 )
@@ -87,6 +87,7 @@ class MidJourney(Plugin):
         gconf = {
             "mj_url": "",
             "mj_api_secret": "",
+            "mj_tip": True,
             "mj_admin_password": "",
             "mj_type": "all",
             "mj_groups": [],
@@ -111,6 +112,7 @@ class MidJourney(Plugin):
             gconf = {
                 "mj_url": os.environ.get("mj_url", ""),
                 "mj_api_secret": os.environ.get("mj_api_secret", ""),
+                "mj_tip": os.environ.get("mj_tip", True),
                 "mj_admin_password": os.environ.get("mj_admin_password", ""),
                 "mj_type": os.environ.get("using_type", "all"),
                 "mj_groups": os.environ.get("group", []),
@@ -144,6 +146,7 @@ class MidJourney(Plugin):
         
         self.mj_url = gconf["mj_url"]
         self.mj_api_secret = gconf["mj_api_secret"]
+        self.mj_tip = gconf["mj_tip"]
         self.mj_admin_password = gconf["mj_admin_password"]
         self.mj_type = gconf["mj_type"]
         self.mj_groups = gconf["mj_groups"]
@@ -210,17 +213,18 @@ class MidJourney(Plugin):
         sessionid = context["session_id"]
         user = context["receiver"]
         isgroup = context.get("isgroup", False)
+        # 判断管理员权限
         isadmin = False
         if user in self.mj_admin_users:
             isadmin = True
+        # 写入用户信息
         userInfo = {
             "user_id": msg.from_user_id,
             "user_nickname": msg.from_user_nickname
         }
-        if msg.actual_user_id:
+        if isgroup:
             userInfo["group_id"] = msg.from_user_id
             userInfo["user_id"] = msg.actual_user_id
-        if msg.actual_user_nickname:
             userInfo["group_name"] = msg.from_user_nickname
             userInfo["user_nickname"] = msg.actual_user_nickname
         self.mj.set_user(json.dumps(userInfo))
@@ -433,9 +437,12 @@ class MidJourney(Plugin):
                 status, msg, imageUrl = self.mj.fetch(fq)
                 if status:
                     if imageUrl:
-                        self.sendMsg(msg, channel, context)
-                        image_path = webp_to_png(imageUrl)
-                        reply = Reply(ReplyType.IMAGE, image_path)
+                        if self.mj_tip:
+                            self.sendMsg(msg, channel, context)
+                            image_path = webp_to_png(imageUrl)
+                            reply = Reply(ReplyType.IMAGE, image_path)
+                        else:
+                            reply = Reply(ReplyType.TEXT, msg)
                     else:
                         reply = Reply(ReplyType.TEXT, msg)
                 else:
@@ -498,7 +505,8 @@ class MidJourney(Plugin):
         reply = None
         status, msg, id = self.mj.imagine(prompt, base64)
         if status:
-            self.sendMsg(msg, channel, context)
+            if self.mj_tip:
+                self.sendMsg(msg, channel, context)
             reply = self.get_f_img(id, channel, context)
         else:
             reply = Reply(ReplyType.ERROR, msg)
@@ -509,7 +517,8 @@ class MidJourney(Plugin):
         reply = None
         status, msg, id = self.mj.simpleChange(id)
         if status:
-            self.sendMsg(msg, channel, context)
+            if self.mj_tip:
+                self.sendMsg(msg, channel, context)
             reply = self.get_f_img(id, channel, context)
         else:
             reply = Reply(ReplyType.ERROR, msg)
@@ -520,8 +529,11 @@ class MidJourney(Plugin):
         reply = None
         status, msg, id = self.mj.describe(base64)
         if status:
-            self.sendMsg(msg, channel, context)
-            reply = self.get_f_img(id, channel, context)
+            if self.mj_tip:
+                self.sendMsg(msg, channel, context)
+                reply = self.get_f_img(id, channel, context)
+            else:
+                reply = self.get_f_img(id, channel, context, "text")
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
@@ -531,7 +543,8 @@ class MidJourney(Plugin):
         reply = None
         status, msg, id = self.mj.blend(base64Array, dimensions)
         if status:
-            self.sendMsg(msg, channel, context)
+            if self.mj_tip:
+                self.sendMsg(msg, channel, context)
             reply = self.get_f_img(id, channel, context)
         else:
             reply = Reply(ReplyType.ERROR, msg)
@@ -542,19 +555,27 @@ class MidJourney(Plugin):
         reply = None
         status, msg, id = self.mj.reroll(id)
         if status:
-            self.sendMsg(msg, channel, context)
+            if self.mj_tip:
+                self.sendMsg(msg, channel, context)
             reply = self.get_f_img(id, channel, context)
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
     
-    def get_f_img(self, id, channel, context):
+    def get_f_img(self, id, channel, context, types="image"):
         status2, msg, imageUrl = self.mj.get_f_img(id)
         if status2:
             if imageUrl:
-                self.sendMsg(msg, channel, context)
-                image_path = webp_to_png(imageUrl)
-                reply = Reply(ReplyType.IMAGE, image_path)
+                if self.mj_tip:
+                    self.sendMsg(msg, channel, context)
+                    image_path = webp_to_png(imageUrl)
+                    reply = Reply(ReplyType.IMAGE, image_path)
+                else:
+                    if types == "image":
+                        image_path = webp_to_png(imageUrl)
+                        reply = Reply(ReplyType.IMAGE, image_path)
+                    else:
+                        reply = Reply(ReplyType.TEXT, msg)
             else:
                 reply = Reply(ReplyType.TEXT, msg)
         else:

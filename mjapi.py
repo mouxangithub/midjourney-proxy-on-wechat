@@ -56,11 +56,11 @@ class _mjApi:
             return False, rj['description'], ""
     
     # 图片想象接口
-    def imagine(self, text, base64=""):
+    def imagine(self, prompt, base64=""):
         try:
             url = self.baseUrl + "/mj/submit/imagine"
             data = {
-                "prompt": text,
+                "prompt": prompt,
                 "base64": base64
             }
             if self.user:
@@ -163,7 +163,10 @@ class _mjApi:
             msg += f"⌛ 状态：{self.status(status)}\n"
             if rj['finishTime']:
                 msg += f"⏱ 耗时：{timeup}秒\n"
-            msg += f"✨ 描述：{rj['description']}\n"
+            if rj["action"] == "DESCRIBE":
+                msg += f"✨ 描述：{rj['prompt']}\n"
+            else:
+                msg += f"✨ 描述：{rj['description']}\n"
             if ruser and ruser["user_nickname"]:
                 msg += f"🙋‍♂️ 提交人：{ruser['user_nickname']}\n"
             if rj['failReason']:
@@ -220,7 +223,10 @@ class _mjApi:
                 elif action == "REROLL":
                     msg += "🎨 重新绘制成功\n"
                 msg += f"📨 ID: {id}\n"
-                msg += f"✨ 描述：{rj['description']}\n"
+                if action == "DESCRIBE":
+                    msg += f"✨ 描述：{rj['prompt']}\n"
+                else:
+                    msg += f"✨ 描述：{rj['description']}\n"
                 if rj['finishTime']:
                     msg += f"⏱ 耗时：{timeup}秒\n"
                 if action == "IMAGINE" or action == "BLEND" or action == "REROLL":

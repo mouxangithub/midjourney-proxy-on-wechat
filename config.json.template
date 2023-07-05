@@ -1,6 +1,7 @@
 {
     "mj_url": "",
     "mj_api_secret": "",
+    "mj_tip": true,
     "mj_admin_password": "",
     "mj_type": "all",
     "mj_groups": [],
