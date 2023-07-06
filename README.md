@@ -48,6 +48,19 @@
 Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip+端口；该插件读取不到docker-compose.yml的环境变量，所以不用去docker-compose.yml配置，具体原因回头再研究
 
 ### 本地运行和Docker部署
+新方式，直接聊天窗口配置，部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)和[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)后
+```shell
+## 第一步：进入聊天窗口，先认证管理员，如果是临时密码，请重启chatgpt-on-wechat前往logs查看，上方日志中有临时密码
+#auth＋密码
+## 第二步：认证成功后进行安装
+#installp https://github.com/mouxangithub/midjourney.git
+## 第三步：#scanp扫描插件，提示发现MidJourney插件即为成功
+#scanp
+## 第四步：输入$mj_help有提示说明插件安装成功
+## 第五步：输入$mj_admin_password 密码（未配置mj_admin_password则临时密码为123456）
+## 第六步：$set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息
+## 无需重启服务，即配即用
+```
 
 如果是本地或者docker部署的[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)，参考下方方法安装此插件：
 
