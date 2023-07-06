@@ -330,13 +330,15 @@ class MidJourney(Plugin):
                         e_context["reply"] = reply
                         e_context.action = EventAction.BREAK_PASS
                         return
-                    self.mj.set_mj(args[0], args[1])
-                    self.mj_url = args[0]
-                    self.mj_api_secret = args[1]
-                    self.config["mj_url"] = args[0]
-                    self.config["mj_api_secret"] = args[1]
+                    mj_url = args[0] if args[0] else ""
+                    mj_api_secret = args[1] if len(args) > 1 else ""
+                    self.mj.set_mj(mj_url, mj_api_secret)
+                    self.mj_url = mj_url
+                    self.mj_api_secret = mj_api_secret
+                    self.config["mj_url"] = mj_url
+                    self.config["mj_api_secret"] = mj_api_secret
                     write_file(self.json_path, self.config)
-                    reply = Reply(ReplyType.INFO, "MJ服务设置成功\nmj_url={}\nmj_api_secret={}".format(args[0], args[1]))
+                    reply = Reply(ReplyType.INFO, "MJ服务设置成功\nmj_url={}\nmj_api_secret={}".format(mj_url, mj_api_secret))
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
