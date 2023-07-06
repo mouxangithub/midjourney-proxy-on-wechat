@@ -10,7 +10,7 @@
 - [x] 可接入企业微信应用使用[`企业微信应用号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatcom/README.md)
 - [x] 可接入微信公众号[`微信公众号`](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/channel/wechatmp/README.md)，但由于个人主体的微信订阅号由于无法通过微信认证，无法主动发出消息，只能被动回复，存在回复时间限制(最多只有15秒的自动回复时间窗口)，所以可能无法及时发送图片，只能通过查询接口去拿，建议不使用个人公众号。
 
-## 已对接现有功能
+## 现有功能
 - [x] midjourney `imgine` 想象
 - [x] midjourney `upscale` 放大
 - [x] midjourney `variation` 变幻
@@ -24,7 +24,7 @@
 - [x] 可自定义添加修改各种功能prefix前缀
 - [x] 聊天窗口管理员指令可修改管理员密码，配置mj_url,mj_api_secret，暂停启用mj服务
 
-## 后续对接计划
+## 后续计划
 - [ ] 聊天窗口插件可生成用户密钥(需管理员)，用户可通过设置用户密钥进行限制MJ服务使用对象，或配置mj_groups限制群聊使用
 - [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
 
