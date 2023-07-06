@@ -36,8 +36,8 @@
 - [x] $mj_admin_password 口令 进行管理员认证(如未配置，临时管理员密码为123456)
 
 ### 管理员指令
-- [x] $set_mj_admin_password 新口令 进行设置新密码
-- [x] $set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息
+- [x] $set_mj_admin_password 新口令 进行设置新密码（此方式会直接写入config.json方便重启直接使用）
+- [x] $set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息（此方式会直接写入config.json方便重启直接使用）
 - [x] $stop_mj 暂停MJ服务
 - [x] $enable_mj 启用MJ服务
 - [x] $clean_mj 清除MJ服务缓存
