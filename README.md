@@ -21,11 +21,26 @@
 - [x] 发送/queue 任务队列查询
 - [x] 解决webp图片无法发送问题
 - [x] mj_tip可关闭多条消息发送（最终只发图片或者描述）
-- [x] 聊天窗口插件可发送['/mj_admin_password + 密码']认证管理员，通过管理员账号可输入['/set_mj_url + mj代理地址 + mj_api_secret请求头部(无可不配置)']进行配置mj服务地址，发送['/stop_mj','/enable_mj']可启用暂停MJ服务
+- [x] 可自定义添加修改各种功能prefix前缀
+- [x] 聊天窗口管理员指令可修改管理员密码，配置mj_url,mj_api_secret，暂停启用mj服务
 
 ## 后续对接计划
 - [ ] 聊天窗口插件可生成用户密钥(需管理员)，用户可通过设置用户密钥进行限制MJ服务使用对象，或配置mj_groups限制群聊使用
 - [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
+
+
+## MJ指令说明
+
+### 通用指令
+- [x] $mj_help 说明文档
+- [x] $mj_admin_password 口令 进行管理员认证(如未配置，默认管理员密码为123456)
+
+### 管理员指令
+- [x] $set_mj_admin_password 新口令 进行设置新密码
+- [x] $set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息
+- [x] $stop_mj 暂停MJ服务
+- [x] $enable_mj 启用MJ服务
+- [x] $clean_mj 清除MJ服务缓存
 
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
@@ -61,7 +76,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 }
 ## 第四步：#scanp扫描插件，提示发现MidJourney插件即为成功
 #scanp
-## 第五步：输入/mjhp有提示说明成功，输入/mj出图
+## 第五步：输入$mj_help有提示说明成功，输入/mj出图
 ```
 
 ### railway部署
@@ -86,7 +101,7 @@ end_prefix="[\"/e\"]"
 #installp https://github.com/mouxangithub/midjourney.git
 ## 第五步：#scanp扫描插件，提示发现MidJourney插件即为成功
 #scanp
-## 第六步：输入/mjhp有提示说明成功，输入/mj出图
+## 第六步：输入$mj_help有提示说明成功，输入/mj出图
 ```
 
 详细教程在[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)和[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)有说明

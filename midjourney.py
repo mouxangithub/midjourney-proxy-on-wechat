@@ -1,7 +1,5 @@
 # encoding:utf-8
 import requests
-import random
-import string
 import os
 import io
 import json
@@ -18,6 +16,7 @@ from .mjcache import _imgCache
 from channel.chat_message import ChatMessage
 from config import conf
 from typing import Tuple
+from config import conf
 
 def check_prefix(content, prefix_list):
     if not prefix_list:
@@ -52,11 +51,28 @@ def write_file(path, content):
         json.dump(content, f, indent=4)
     return True
 
+COMMANDS = {
+    "mj_help": {
+        "alias": ["mj_help", "帮助"],
+        "desc": "说明文档",
+    },
+    "mj_admin_password": {
+        "alias": ["mj_admin_password"],
+        "args": ["口令"],
+        "desc": "MJ管理员认证",
+    }
+}
+
 ADMIN_COMMANDS = {
     "set_mj_url": {
         "alias": ["set_mj_url", "设置MJ服务地址"],
-        "args": ["mj_url"],
+        "args": ["服务器地址", "请求头参数"],
         "desc": "设置MJ服务地址",
+    },
+    "set_mj_admin_password": {
+        "alias": ["set_mj_admin_password"],
+        "args": ["口令"],
+        "desc": "修改MJ管理员认证口令",
     },
     "stop_mj": {
         "alias": ["stop_mj", "暂停MJ服务"],
@@ -76,7 +92,7 @@ ADMIN_COMMANDS = {
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.32",
+    version="1.0.33",
     author="mouxan",
     desire_priority=0
 )
@@ -105,9 +121,11 @@ class MidJourney(Plugin):
 
         # 读取和写入配置文件
         curdir = os.path.dirname(__file__)
-        config_path = os.path.join(curdir, "config.json")
-        if not os.path.exists(config_path):
+        self.json_path = os.path.join(curdir, "config.json")
+        if not os.path.exists(self.json_path):
             config_path = os.path.join(curdir, "config.json.template")
+        else:
+            config_path = self.json_path
         if os.environ.get("mj_url", None):
             gconf = {
                 "mj_url": os.environ.get("mj_url", ""),
@@ -131,7 +149,7 @@ class MidJourney(Plugin):
             gconf = {**gconf, **json.loads(read_file(config_path))}
         
         if gconf["mj_admin_password"] == "":
-            self.temp_password = "".join(random.sample(string.digits, 4))
+            self.temp_password = "123456"
             logger.info("[MJ] 因未设置管理员密码，本次的临时密码为%s。" % self.temp_password)
         else:
             self.temp_password = None
@@ -140,7 +158,7 @@ class MidJourney(Plugin):
             logger.info("[MJ] 未设置[mj_url],请前往环境变量进行配置或在该插件目录下的config.json进行配置.")
 
         # 重新写入配置文件
-        write_file(config_path, gconf)
+        write_file(self.json_path, gconf)
 
         logger.info("[MJ] config={}".format(gconf))
         
@@ -156,35 +174,54 @@ class MidJourney(Plugin):
         if not gconf["imagine_prefix"]:
             self.imagine_prefix = ["/i", "/mj"]
         else:
-            self.imagine_prefix = eval(gconf["imagine_prefix"])
+            self.imagine_prefix = eval(gconf["imagine_prefix"]) if isinstance(gconf["imagine_prefix"], str) else gconf["imagine_prefix"]
         if not gconf["fetch_prefix"]:
             self.fetch_prefix = ["/f"]
         else:
-            self.fetch_prefix = eval(gconf["fetch_prefix"])
+            self.fetch_prefix = eval(gconf["fetch_prefix"]) if isinstance(gconf["fetch_prefix"], str) else gconf["fetch_prefix"]
         if not gconf["up_prefix"]:
             self.up_prefix = ["/u"]
         else:
-            self.up_prefix = eval(gconf["up_prefix"])
+            self.up_prefix = eval(gconf["up_prefix"]) if isinstance(gconf["up_prefix"], str) else gconf["up_prefix"]
         if not gconf["pad_prefix"]:
             self.pad_prefix = ["/p"]
         else:
-            self.pad_prefix = eval(gconf["pad_prefix"])
+            self.pad_prefix = eval(gconf["pad_prefix"]) if isinstance(gconf["pad_prefix"], str) else gconf["pad_prefix"]
         if not gconf["blend_prefix"]:
             self.blend_prefix = ["/b"]
         else:
-            self.blend_prefix = eval(gconf["blend_prefix"])
+            self.blend_prefix = eval(gconf["blend_prefix"]) if isinstance(gconf["blend_prefix"], str) else gconf["blend_prefix"]
         if not gconf["describe_prefix"]:
             self.describe_prefix = ["/d"]
         else:
-            self.describe_prefix = eval(gconf["describe_prefix"])
+            self.describe_prefix = eval(gconf["describe_prefix"]) if isinstance(gconf["describe_prefix"], str) else gconf["describe_prefix"]
         if not gconf["queue_prefix"]:
             self.queue_prefix = ["/q"]
         else:
-            self.queue_prefix = eval(gconf["queue_prefix"])
+            self.queue_prefix = eval(gconf["queue_prefix"]) if isinstance(gconf["queue_prefix"], str) else gconf["queue_prefix"]
         if not gconf["end_prefix"]:
             self.end_prefix = ["/e"]
         else:
-            self.end_prefix = eval(gconf["end_prefix"])
+            self.end_prefix = eval(gconf["end_prefix"]) if isinstance(gconf["end_prefix"], str) else gconf["end_prefix"]
+        
+        self.config = {
+            "mj_url": self.mj_url,
+            "mj_api_secret": self.mj_api_secret,
+            "mj_tip": self.mj_tip,
+            "mj_admin_password": self.mj_admin_password,
+            "mj_type": self.mj_type,
+            "mj_groups": self.mj_groups,
+            "mj_users": self.mj_users,
+            "mj_admin_users": [],
+            "imagine_prefix": self.imagine_prefix,
+            "fetch_prefix": self.fetch_prefix,
+            "up_prefix": self.up_prefix,
+            "pad_prefix": self.pad_prefix,
+            "blend_prefix": self.blend_prefix,
+            "describe_prefix": self.describe_prefix,
+            "queue_prefix": self.queue_prefix,
+            "end_prefix": self.end_prefix
+        }
         
         # 目前没有设计session过期事件，这里先暂时使用过期字典
         if conf().get("expires_in_seconds"):
@@ -194,7 +231,7 @@ class MidJourney(Plugin):
         
         self.ismj = True  # 机器人是否运行中
         
-        self.mj = _mjApi(self.mj_url, self.mj_api_secret, self.imagine_prefix, self.fetch_prefix, self.up_prefix, self.pad_prefix, self.blend_prefix, self.describe_prefix, self.queue_prefix, self.end_prefix)
+        self.mj = _mjApi(self.config)
 
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
 
@@ -206,6 +243,7 @@ class MidJourney(Plugin):
             ContextType.IMAGE,
         ]:
             return
+        trigger_prefix = conf().get("plugin_trigger_prefix", "$")
         channel = e_context['channel']
         context = e_context['context']
         content = context.content
@@ -214,9 +252,9 @@ class MidJourney(Plugin):
         user = context["receiver"]
         isgroup = context.get("isgroup", False)
         # 判断管理员权限
-        isadmin = False
+        self.isadmin = False
         if user in self.mj_admin_users:
-            isadmin = True
+            self.isadmin = True
         # 写入用户信息
         userInfo = {
             "user_id": msg.from_user_id,
@@ -231,12 +269,17 @@ class MidJourney(Plugin):
 
         reply = None
 
-        if ContextType.TEXT == context.type:
+        if ContextType.TEXT == context.type and content.startswith(trigger_prefix):
             command_parts = content[1:].strip().split()
             cmd = command_parts[0]
             args = command_parts[1:]
-            if cmd == "mj_admin_password":
-                ok, result = self.authenticate(user, args, isadmin, isgroup)
+            if cmd == "mj_help":
+                reply = Reply(ReplyType.INFO, self.get_help_text(verbose=True))
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
+                return
+            elif cmd == "mj_admin_password":
+                ok, result = self.authenticate(user, args, self.isadmin, isgroup)
                 reply = Reply()
                 if ok:
                     reply.type = ReplyType.INFO
@@ -247,24 +290,26 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif cmd == "set_mj_admin_password":
-                if isadmin == False:
-                    reply = Reply(ReplyType.ERROR, "[MJ] 您没有权限执行该操作,请先输入$mj_admin_password+密码进行认证")
+                if self.isadmin == False:
+                    reply = Reply(ReplyType.ERROR, f"[MJ] 您没有权限执行该操作,请先输入{trigger_prefix}mj_admin_password+密码进行认证")
                     e_context["reply"] = reply
                     e_context.action = EventAction.BREAK_PASS
                     return
-                if len(args) != 1:
+                if len(args) < 1:
                     reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的密码")
                     e_context["reply"] = reply
                     e_context.action = EventAction.BREAK_PASS
                     return
                 self.mj_admin_password = args[0]
+                self.config["mj_admin_password"] = args[0]
+                write_file(self.json_path, self.config)
                 reply = Reply(ReplyType.INFO, "[MJ] 管理员口令设置成功")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif cmd == "set_mj_url" or cmd == "stop_mj" or cmd == "enable_mj" or cmd == "clean_mj":
-                if isadmin == False:
-                    reply = Reply(ReplyType.ERROR, "[MJ] 您没有权限执行该操作,请先输入$mj_admin_password+密码进行认证")
+                if self.isadmin == False:
+                    reply = Reply(ReplyType.ERROR, f"[MJ] 您没有权限执行该操作,请先输入{trigger_prefix}mj_admin_password+密码进行认证")
                     e_context["reply"] = reply
                     e_context.action = EventAction.BREAK_PASS
                     return
@@ -280,7 +325,7 @@ class MidJourney(Plugin):
                         del self.sessions[sessionid]
                     reply = Reply(ReplyType.INFO, "[MJ] 缓存已清理")
                 else:
-                    if len(args) != 1:
+                    if len(args) < 1:
                         reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的服务器地址")
                         e_context["reply"] = reply
                         e_context.action = EventAction.BREAK_PASS
@@ -288,7 +333,10 @@ class MidJourney(Plugin):
                     self.mj.set_mj(args[0], args[1])
                     self.mj_url = args[0]
                     self.mj_api_secret = args[1]
-                    reply = Reply(ReplyType.INFO, "MJ服务设置成功 mj_url={} mj_api_secret={}".format(args[0], args[1]))
+                    self.config["mj_url"] = args[0]
+                    self.config["mj_api_secret"] = args[1]
+                    write_file(self.json_path, self.config)
+                    reply = Reply(ReplyType.INFO, "MJ服务设置成功\nmj_url={}\nmj_api_secret={}".format(args[0], args[1]))
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -307,7 +355,9 @@ class MidJourney(Plugin):
             
             # 识别图片
             if (not isgroup and not img_cache) or (not isgroup and not img_cache["instruct"]) or (img_cache and img_cache["instruct"] == "describe"):
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 reply = self.describe(base64, channel, context)
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
@@ -337,7 +387,6 @@ class MidJourney(Plugin):
 
 
         if ContextType.TEXT == context.type:
-
             # 判断是否是指令
             iprefix, iq = check_prefix(content, self.imagine_prefix)
             fprefix, fq = check_prefix(content, self.fetch_prefix)
@@ -348,13 +397,10 @@ class MidJourney(Plugin):
             qprefix, qq = check_prefix(content, self.queue_prefix)
             eprefix, eq = check_prefix(content, self.end_prefix)
 
-            if content == "/mjhp" or content == "/mjhelp" or content == "/mj-help":
-                reply = Reply(ReplyType.INFO, self.mj.help_text())
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
-                return
-            elif iprefix == True:
-                self.env_detection(e_context)
+            if iprefix == True:
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 reply = self.imagine(iq, "", channel, context)
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
@@ -363,7 +409,9 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif uprefix == True:
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 reply = self.up(uq, channel, context)
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
@@ -372,7 +420,9 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif pprefix == True:
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 if not pq:
                     reply = Reply(ReplyType.TEXT, "✨ 垫图模式\n✏ 请在指令后输入要绘制的描述文字")
                 else:
@@ -382,21 +432,27 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif bprefix == True:
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 self.sessions[sessionid] = _imgCache(sessionid, "blend", bq)
                 reply = Reply(ReplyType.TEXT, "✨ 混图模式\n✏ 请发送两张或多张图片，然后输入['{self.end_prefix[0]}']结束")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif dprefix == True:
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 self.sessions[sessionid] = _imgCache(sessionid, "describe", dq)
                 reply = Reply(ReplyType.TEXT, "✨ 识图模式\n✏ 请发送一张图片")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif content.startswith("/re"):
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 id = content.replace("/re", "").strip()
                 reply = self.reroll(id, channel, context)
                 if sessionid in self.sessions:
@@ -406,7 +462,9 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif eprefix == True:
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 # 从会话中获取缓存的图片
                 img_cache = None
                 if sessionid in self.sessions:
@@ -432,7 +490,9 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif fprefix == True:
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 logger.debug("[MJ] /fetch id={}".format(fq))
                 status, msg, imageUrl = self.mj.fetch(fq)
                 if status:
@@ -454,7 +514,9 @@ class MidJourney(Plugin):
                 e_context.action = EventAction.BREAK_PASS
                 return
             elif qprefix == True:
-                self.env_detection(e_context)
+                status = self.env_detection(e_context)
+                if not status:
+                    return
                 status, msg = self.mj.task_queue()
                 if status:
                     reply = Reply(ReplyType.TEXT, msg)
@@ -471,7 +533,28 @@ class MidJourney(Plugin):
         if kwargs.get("verbose") != True:
             return "这是一个AI绘画工具，只要输入想到的文字，通过人工智能产出相对应的图。"
         else:
-            return self.mj.help_text()
+            trigger_prefix = conf().get("plugin_trigger_prefix", "$")
+            help_text = self.mj.help_text()
+            help_text += f"\n-----------------------------\n"
+            help_text += "通用指令：\n"
+            for cmd, info in COMMANDS.items():
+                alias = [trigger_prefix + a for a in info["alias"][:1]]
+                help_text += f"{','.join(alias)} "
+                if "args" in info:
+                    args = [a for a in info["args"]]
+                    help_text += f"{' '.join(args)}"
+                help_text += f": {info['desc']}\n"
+            if ADMIN_COMMANDS and self.isadmin:
+                help_text += f"-----------------------------\n"
+                help_text += "管理员指令：\n"
+                for cmd, info in ADMIN_COMMANDS.items():
+                    alias = [trigger_prefix + a for a in info["alias"][:1]]
+                    help_text += f"{','.join(alias)} "
+                    if "args" in info:
+                        args = [a for a in info["args"]]
+                        help_text += f"{' '.join(args)}"
+                    help_text += f": {info['desc']}\n"
+            return help_text
 
     def authenticate(self, userid, args, isadmin, isgroup) -> Tuple[bool, str]:
         if isgroup:
@@ -494,11 +577,16 @@ class MidJourney(Plugin):
             return False, "[MJ] 认证失败"
     
     def env_detection(self, e_context: EventContext):
+        trigger_prefix = conf().get("plugin_trigger_prefix", "$")
         if not self.mj_url:
-            reply = Reply(ReplyType.ERROR, "未设置[mj_url]，请前往环境变量进行配置或在该插件目录下的config.json进行配置。")
+            if self.isadmin:
+                reply = Reply(ReplyType.ERROR, f"未设置[mj_url]，请输入{trigger_prefix}set_mj_url+服务器地址+请求头参数进行设置。")
+            else:
+                reply = Reply(ReplyType.ERROR, "未设置[mj_url]，请联系管理员进行设置。")
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
-            return
+            return False
+        return True
     
     def imagine(self, prompt, base64, channel, context):
         logger.debug("[MJ] /imagine prompt={} img={}".format(prompt, base64))

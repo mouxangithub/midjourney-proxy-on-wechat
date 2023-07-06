@@ -4,29 +4,20 @@ import requests
 from common.log import logger
 
 class _mjApi:
-    def __init__(self, mj_url, mj_api_secret, imagine_prefix, fetch_prefix, up_prefix, pad_prefix, blend_prefix, describe_prefix, queue_prefix, end_prefix):
-        self.baseUrl = mj_url
+    def __init__(self, config):
         self.headers = {
             "Content-Type": "application/json",
         }
-        if mj_api_secret:
-            self.headers["mj-api-secret"] = mj_api_secret
-        if imagine_prefix:
-            self.imagine_prefix = imagine_prefix
-        if fetch_prefix:
-            self.fetch_prefix = fetch_prefix
-        if up_prefix:
-            self.up_prefix = up_prefix
-        if pad_prefix:
-            self.pad_prefix = pad_prefix
-        if blend_prefix:
-            self.blend_prefix = blend_prefix
-        if describe_prefix:
-            self.describe_prefix = describe_prefix
-        if queue_prefix:
-            self.queue_prefix = queue_prefix
-        if end_prefix:
-            self.end_prefix = end_prefix
+        self.baseUrl = config['mj_url']
+        self.headers["mj-api-secret"] = config['mj_api_secret']
+        self.imagine_prefix = config['imagine_prefix']
+        self.fetch_prefix = config['fetch_prefix']
+        self.up_prefix = config['up_prefix']
+        self.pad_prefix = config['pad_prefix']
+        self.blend_prefix = config['blend_prefix']
+        self.describe_prefix = config['describe_prefix']
+        self.queue_prefix = config['queue_prefix']
+        self.end_prefix = config['end_prefix']
     
     def set_user(self, user):
         self.user = user
