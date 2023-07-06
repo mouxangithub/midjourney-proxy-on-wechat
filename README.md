@@ -48,6 +48,7 @@
 Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip+端口；该插件读取不到docker-compose.yml的环境变量，所以不用去docker-compose.yml配置，具体原因回头再研究
 
 ### 本地运行和Docker部署
+
 新方式，直接聊天窗口配置，部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)和[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)后
 ```shell
 ## 第一步：进入聊天窗口，先认证管理员，如果是临时密码，请重启chatgpt-on-wechat前往logs查看，上方日志中有临时密码
