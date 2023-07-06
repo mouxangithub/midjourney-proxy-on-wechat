@@ -33,7 +33,7 @@
 
 ### 通用指令
 - [x] $mj_help 说明文档
-- [x] $mj_admin_password 口令 进行管理员认证(如未配置，默认管理员密码为123456)
+- [x] $mj_admin_password 口令 进行管理员认证(如未配置，临时管理员密码为123456)
 
 ### 管理员指令
 - [x] $set_mj_admin_password 新口令 进行设置新密码
