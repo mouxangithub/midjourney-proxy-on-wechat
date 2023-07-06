@@ -23,9 +23,9 @@
 - [x] mj_tip可关闭多条消息发送（最终只发图片或者描述）
 - [x] 可自定义添加修改各种功能prefix前缀
 - [x] 聊天窗口管理员指令可修改管理员密码，配置mj_url,mj_api_secret，暂停启用mj服务
+- [x] 聊天窗口管理员指令可增删改查白名单群组和白名单用户，从而限制用户使用，减少损耗
 
 ## 后续计划
-- [ ] 聊天窗口插件可生成用户密钥(需管理员)，用户可通过设置用户密钥进行限制MJ服务使用对象，或配置mj_groups限制群聊使用
 - [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
 
 
@@ -38,9 +38,17 @@
 ### 管理员指令
 - [x] $set_mj_admin_password 新口令 进行设置新密码（此方式会直接写入config.json方便重启直接使用）
 - [x] $set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息（此方式会直接写入config.json方便重启直接使用）
-- [x] $stop_mj 暂停MJ服务
-- [x] $enable_mj 启用MJ服务
-- [x] $clean_mj 清除MJ服务缓存
+- [x] $stop_mj: 暂停MJ服务
+- [x] $enable_mj: 启用MJ服务
+- [x] $clean_mj: 清除MJ服务缓存
+- [x] $g_wgroup: 查询白名单群组
+- [x] $s_wgroup 群组名称: 设置白名单群组，群内可不加群组名称参数，默认使用该群
+- [x] $r_wgroup 群组名称或序列号: 移除白名单群组，群内可不加群组名称参数，默认使用该群
+- [x] $c_wgroup: 清空白名单群组
+- [x] $g_wuser 查询白名单用户
+- [x] $s_wuser 用户ID或昵称: 设置白名单用户
+- [x] $r_wuser 用户ID或昵称或序列号: 移除白名单用户
+- [x] $c_wuser: 清空白名单用户
 
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
