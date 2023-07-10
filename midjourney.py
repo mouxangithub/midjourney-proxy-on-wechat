@@ -20,6 +20,7 @@ from config import conf
 from lib import itchat
 from lib.itchat.content import *
 
+
 def check_prefix(content, prefix_list):
     if not prefix_list:
         return False, None
@@ -27,6 +28,7 @@ def check_prefix(content, prefix_list):
         if content.startswith(prefix):
             return True, content.replace(prefix, "").strip()
     return False, None
+
 
 def image_to_base64(image_path):
     filename, extension = os.path.splitext(image_path)
@@ -36,6 +38,8 @@ def image_to_base64(image_path):
         return f"data:image/{t};base64,{encoded_string.decode('utf-8')}"
 
 # 下载图片，任何格式都转JPEG
+
+
 def img_to_jpeg(image_url):
     image = io.BytesIO()
     res = requests.get(image_url)
@@ -44,14 +48,17 @@ def img_to_jpeg(image_url):
     idata.save(image, format="JPEG")
     return image
 
+
 def read_file(path):
     with open(path, mode="r", encoding="utf-8") as f:
         return f.read()
+
 
 def write_file(path, content):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(content, f, indent=4)
     return True
+
 
 ADMIN_COMMANDS = {
     "set_mj_url": {
@@ -118,11 +125,12 @@ ADMIN_COMMANDS = {
     }
 }
 
+
 @plugins.register(
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.35",
+    version="1.0.36",
     author="mouxan",
     desire_priority=0
 )
@@ -135,8 +143,8 @@ class MidJourney(Plugin):
             "mj_api_secret": "",
             "mj_tip": True,
             "mj_admin_password": "",
-            "mj_users": [],
-            "mj_admin_users": [
+            "mj_admin_users": [],
+            "mj_users": [
                 {
                     "user_id": "ALL_USER",
                     "user_nickname": "所有用户"
@@ -204,7 +212,7 @@ class MidJourney(Plugin):
             }
         else:
             gconf = {**gconf, **json.loads(read_file(config_path))}
-        
+
         if gconf["mj_admin_password"] == "":
             self.temp_password = "123456"
             logger.info("[MJ] 因未设置管理员密码，本次的临时密码为%s。" % self.temp_password)
@@ -215,7 +223,7 @@ class MidJourney(Plugin):
             logger.info("[MJ] 未设置[mj_url],请前往环境变量进行配置或在该插件目录下的config.json进行配置.")
 
         logger.info("[MJ] config={}".format(gconf))
-        
+
         self.mj_url = gconf["mj_url"]
         self.mj_api_secret = gconf["mj_api_secret"]
         self.mj_tip = gconf["mj_tip"]
@@ -267,7 +275,7 @@ class MidJourney(Plugin):
             self.end_prefix = ["/e"]
         else:
             self.end_prefix = eval(gconf["end_prefix"]) if isinstance(gconf["end_prefix"], str) else gconf["end_prefix"]
-        
+
         self.config = {
             "mj_url": self.mj_url,
             "mj_api_secret": self.mj_api_secret,
@@ -288,15 +296,15 @@ class MidJourney(Plugin):
 
         # 重新写入配置文件
         write_file(self.json_path, self.config)
-        
+
         # 目前没有设计session过期事件，这里先暂时使用过期字典
         if conf().get("expires_in_seconds"):
             self.sessions = ExpiredDict(conf().get("expires_in_seconds"))
         else:
             self.sessions = dict()
-        
+
         self.ismj = True  # 机器人是否运行中
-        
+
         self.mj = _mjApi(self.config)
 
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
@@ -317,10 +325,14 @@ class MidJourney(Plugin):
         msg: ChatMessage = context["msg"]
         sessionid = context["session_id"]
         isgroup = context.get("isgroup", False)
+        reply = Reply()
+
         # 写入用户信息
         userInfo = {
             "user_id": msg.from_user_id,
-            "user_nickname": msg.from_user_nickname
+            "user_nickname": msg.from_user_nickname,
+            "isadmin": False,
+            "isgroup": isgroup,
         }
         if isgroup:
             userInfo["group_id"] = msg.from_user_id
@@ -330,92 +342,80 @@ class MidJourney(Plugin):
 
         # 判断管理员权限
         self.isadmin = False
-        if userInfo['user_id'] in self.mj_admin_users:
+
+        # 判断是否是管理员
+        if not isgroup and (userInfo["user_id"] in [user["user_id"] for user in self.mj_admin_users]):
             self.isadmin = True
+            userInfo['isadmin'] = True
 
         self.mj.set_user(json.dumps(userInfo))
-
-        reply = None
 
         if ContextType.TEXT == context.type and content.startswith(trigger_prefix):
             command_parts = content[1:].strip().split()
             cmd = command_parts[0]
             args = command_parts[1:]
+            reply.type = ReplyType.INFO
             if cmd == "mj_help":
-                reply = Reply(ReplyType.INFO, self.get_help_text(verbose=True))
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
-                return
+                reply.content = self.get_help_text(verbose=True)
+                return self.send(reply, e_context)
             elif cmd == "mj_admin_password":
-                ok, result = self.authenticate(userInfo['user_id'], args, self.isadmin, isgroup)
-                reply = Reply()
-                if ok:
-                    reply.type = ReplyType.INFO
-                else:
+                ok, result = self.authenticate(userInfo, args)
+                if not ok:
                     reply.type = ReplyType.ERROR
                 reply.content = result
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif cmd == "set_mj_admin_password":
                 if self.isadmin == False:
-                    reply = Reply(ReplyType.ERROR, f"[MJ] 您没有权限执行该操作,请先输入{trigger_prefix}mj_admin_password+密码进行认证")
-                    e_context["reply"] = reply
-                    e_context.action = EventAction.BREAK_PASS
-                    return
+                    return self.send("[MJ] 您没有权限执行该操作,进行管理员认证", e_context, ReplyType.ERROR)
                 if len(args) < 1:
-                    reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的密码")
-                    e_context["reply"] = reply
-                    e_context.action = EventAction.BREAK_PASS
-                    return
-                self.mj_admin_password = args[0]
-                self.config["mj_admin_password"] = args[0]
+                    return self.send("[MJ] 请输入需要设置的密码", e_context, ReplyType.ERROR)
+                password = args[0]
+                if len(password) < 6:
+                    return self.send("[MJ] 密码长度不能小于6位", e_context, ReplyType.ERROR)
+                if password == self.temp_password:
+                    return self.send("[MJ] 不能使用临时密码，请重新设置", e_context, ReplyType.ERROR)
+                if password == self.mj_admin_password:
+                    return self.send("[MJ] 新密码不能与旧密码相同", e_context, ReplyType.ERROR)
+                self.mj_admin_password = password
+                self.config["mj_admin_password"] = password
                 write_file(self.json_path, self.config)
-                reply = Reply(ReplyType.INFO, "[MJ] 管理员口令设置成功")
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                reply.content = "[MJ] 管理员口令设置成功"
+                return self.send(reply, e_context)
             elif cmd == "set_mj_url" or cmd == "stop_mj" or cmd == "enable_mj" or cmd == "clean_mj" or cmd == "mj_tip" or cmd == "s_wgroup" or cmd == "r_wgroup" or cmd == "g_wgroup" or cmd == "c_wgroup" or cmd == "s_wuser" or cmd == "r_wuser" or cmd == "g_wuser" or cmd == "c_wuser":
                 if self.isadmin == False:
-                    reply = Reply(ReplyType.ERROR, f"[MJ] 您没有权限执行该操作,请先输入{trigger_prefix}mj_admin_password+密码进行认证")
-                    e_context["reply"] = reply
-                    e_context.action = EventAction.BREAK_PASS
-                    return
+                    return self.send(f"[MJ] 您没有权限执行该操作,请先输入{trigger_prefix}mj_admin_password+密码进行认证", e_context, ReplyType.ERROR)
                 if cmd == "mj_tip":
                     self.mj_tip = not self.mj_tip
                     self.config["mj_tip"] = self.mj_tip
                     write_file(self.json_path, self.config)
-                    reply = Reply(ReplyType.INFO, f"[MJ] 提示功能已{'开启' if self.mj_tip else '关闭'}")
+                    reply.content = f"[MJ] 提示功能已{'开启' if self.mj_tip else '关闭'}"
                 elif cmd == "stop_mj":
                     self.ismj = False
-                    reply = Reply(ReplyType.INFO, "[MJ] 服务已暂停")
+                    reply.content = "[MJ] 服务已暂停"
                 elif cmd == "enable_mj":
                     self.ismj = True
-                    reply = Reply(ReplyType.INFO, "[MJ] 服务已恢复")
+                    reply.content = "[MJ] 服务已启用"
                 elif cmd == "clean_mj":
                     if sessionid in self.sessions:
                         self.sessions[sessionid].reset()
                         del self.sessions[sessionid]
-                    reply = Reply(ReplyType.INFO, "[MJ] 缓存已清理")
+                    reply.content = "[MJ] 缓存已清理"
                 elif cmd == "g_wgroup" and not isgroup:
-                    t = "\n"
                     if "ALL_GROUP" in self.mj_groups:
-                        reply = Reply(ReplyType.INFO, f"[MJ] 白名单群组：所有群组")
+                        reply.content = "[MJ] 白名单群组：所有群组"
                     elif len(self.mj_groups) == 0:
-                        reply = Reply(ReplyType.INFO, f"[MJ] 白名单群组：无")
+                        reply.content = "[MJ] 白名单群组：无"
                     else:
-                        reply = Reply(ReplyType.INFO, f"[MJ] 白名单群组\n{t.join(f'{index+1}. {group}' for index, group in enumerate(self.mj_groups))}")
+                        t = "\n"
+                        reply.content = f"[MJ] 白名单群组\n{t.join(f'{index+1}. {group}' for index, group in enumerate(self.mj_groups))}"
                 elif cmd == "c_wgroup":
                     self.mj_groups = ["ALL_GROUP"]
                     self.config["mj_groups"] = self.mj_groups
                     write_file(self.json_path, self.config)
-                    reply = Reply(ReplyType.INFO, f"[MJ] 白名单已清空，目前所有群组都可以使用MJ服务")
+                    reply.content = "[MJ] 白名单已清空，目前所有群组都可以使用MJ服务"
                 elif cmd == "s_wgroup":
                     if not isgroup and len(args) < 1:
-                        reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的群组名称")
-                        e_context["reply"] = reply
-                        e_context.action = EventAction.BREAK_PASS
-                        return
+                        return self.send("[MJ] 请输入需要设置的群组名称", e_context, ReplyType.ERROR)
                     if isgroup:
                         group_name = userInfo["group_name"]
                     if args and args[0]:
@@ -426,41 +426,28 @@ class MidJourney(Plugin):
                         reply = Reply(ReplyType.INFO, f"[MJ] 白名单已清空，目前所有群组都可以使用MJ服务")
                     else:
                         if group_name in self.mj_groups:
-                            reply = Reply(ReplyType.INFO, f"[MJ] 群组[{group_name}]已在白名单中")
-                            e_context["reply"] = reply
-                            e_context.action = EventAction.BREAK_PASS
-                            return
+                            return self.send(f"[MJ] 群组[{group_name}]已在白名单中", e_context, ReplyType.ERROR)
                         if "ALL_GROUP" in self.mj_groups:
                             self.mj_groups.remove("ALL_GROUP")
-                        # 判断是否是itchat平台
+                        # 判断是否是itchat平台，并判断group_name是否在列表中
                         if conf().get("channel_type", "wx") == "wx":
                             isonin = itchat.search_chatrooms(name=group_name)
-                            # 判断group_name是否在列表中
                             if len(isonin) == 0:
-                                reply = Reply(ReplyType.ERROR, f"[MJ] 群组[{group_name}]不存在")
-                                e_context["reply"] = reply
-                                e_context.action = EventAction.BREAK_PASS
-                                return
+                                return self.send(f"[MJ] 群组[{group_name}]不存在", e_context, ReplyType.ERROR)
                         self.mj_groups.append(group_name)
-                        reply = Reply(ReplyType.INFO, f"[MJ] 群组[{group_name}]已添加到白名单")
+                        reply.content = f"[MJ] 群组[{group_name}]已添加到白名单"
                     self.config["mj_groups"] = self.mj_groups
                     write_file(self.json_path, self.config)
                 elif cmd == "r_wgroup":
                     if not isgroup and len(args) < 1:
-                        reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要移除的群组名称或序列号")
-                        e_context["reply"] = reply
-                        e_context.action = EventAction.BREAK_PASS
-                        return
+                        return self.send("[MJ] 请输入需要移除的群组名称或序列号", e_context, ReplyType.ERROR)
                     if isgroup:
                         group_name = userInfo["group_name"]
                     if args and args[0]:
                         if args[0].isdigit():
                             index = int(args[0]) - 1
                             if index < 0 or index >= len(self.mj_groups):
-                                reply = Reply(ReplyType.ERROR, f"[MJ] 序列号[{args[0]}]不在白名单中")
-                                e_context["reply"] = reply
-                                e_context.action = EventAction.BREAK_PASS
-                                return
+                                return self.send(f"[MJ] 序列号[{args[0]}]不在白名单中", e_context, ReplyType.ERROR)
                             group_name = self.mj_groups[index]
                         else:
                             group_name = args[0]
@@ -470,18 +457,18 @@ class MidJourney(Plugin):
                             self.mj_groups.append("ALL_GROUP")
                         self.config["mj_groups"] = self.mj_groups
                         write_file(self.json_path, self.config)
-                        reply = Reply(ReplyType.INFO, f"[MJ] 群组[{group_name}]已从白名单中移除")
+                        reply.content = f"[MJ] 群组[{group_name}]已从白名单中移除"
                     else:
-                        reply = Reply(ReplyType.ERROR, f"[MJ] 群组[{group_name}]不在白名单中")
+                        return self.send(f"[MJ] 群组[{group_name}]不在白名单中", e_context, ReplyType.ERROR)
                 elif cmd == "g_wuser" and not isgroup:
                     t = "\n"
                     if any(user["user_id"] == "ALL_USER" for user in self.mj_users):
-                        reply = Reply(ReplyType.INFO, f"[MJ] 白名单用户：所有用户")
+                        reply.content = "[MJ] 白名单用户：所有用户"
                     elif len(self.mj_users) == 0:
-                        reply = Reply(ReplyType.INFO, f"[MJ] 白名单用户：无")
+                        reply.content = "[MJ] 白名单用户：无"
                     else:
                         lists = t.join(f'{index+1}. {data["user_nickname"]}' for index, data in enumerate(self.mj_users))
-                        reply = Reply(ReplyType.INFO, f"[MJ] 白名单用户\n{lists}")
+                        reply.content = f"[MJ] 白名单用户\n{lists}"
                 elif cmd == "c_wuser":
                     self.mj_users = [{
                         "user_id": "ALL_USER",
@@ -489,21 +476,18 @@ class MidJourney(Plugin):
                     }]
                     self.config["mj_users"] = self.mj_users
                     write_file(self.json_path, self.config)
-                    reply = Reply(ReplyType.INFO, f"[MJ] 白名单已清空，目前所有用户都可以使用MJ服务")
+                    reply.content = "[MJ] 白名单已清空，目前所有用户都可以使用MJ服务"
                 elif cmd == "s_wuser":
                     user_name = args[0] if args and args[0] else ""
                     if not args or len(args) < 1:
-                        reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的用户名称或ID")
-                        e_context["reply"] = reply
-                        e_context.action = EventAction.BREAK_PASS
-                        return
+                        return self.send("[MJ] 请输入需要设置的用户名称或ID", e_context, ReplyType.ERROR)
                     # 如果是设置所有用户，则清空白名单
                     if user_name == "ALL_USER" or user_name == "all_user" or user_name == "所有用户":
                         self.mj_users = [{
                             "user_id": "ALL_USER",
                             "user_nickname": "所有用户"
                         }]
-                        reply = Reply(ReplyType.INFO, f"[MJ] 白名单已清空，目前所有用户都可以使用MJ服务")
+                        reply.content = "[MJ] 白名单已清空，目前所有用户都可以使用MJ服务"
                     else:
                         index = -1
                         aind = -1
@@ -515,10 +499,7 @@ class MidJourney(Plugin):
                                 aind = i
                                 break
                         if index >= 0:
-                            reply = Reply(ReplyType.INFO, f"[MJ] 用户[{self.mj_users[i]['user_nickname']}]已在白名单中")
-                            e_context["reply"] = reply
-                            e_context.action = EventAction.BREAK_PASS
-                            return
+                            return self.send(f"[MJ] 用户[{self.mj_users[index]['user_nickname']}]已在白名单中", e_context, ReplyType.ERROR)
                         if aind >= 0:
                             del self.mj_users[index]
                         userInfo = {
@@ -530,40 +511,29 @@ class MidJourney(Plugin):
                             userInfo = self.search_friends(user_name)
                             # 判断user_name是否在列表中
                             if not userInfo or not userInfo["user_id"]:
-                                reply = Reply(ReplyType.ERROR, f"[MJ] 用户[{user_name}]不存在通讯录中")
-                                e_context["reply"] = reply
-                                e_context.action = EventAction.BREAK_PASS
-                                return
+                                return self.send(f"[MJ] 用户[{user_name}]不存在通讯录中", e_context, ReplyType.ERROR)
                         self.mj_users.append(userInfo)
-                        reply = Reply(ReplyType.INFO, f"[MJ] 用户[{userInfo['user_nickname']}]已添加到白名单")
+                        reply.content = f"[MJ] 用户[{userInfo['user_nickname']}]已添加到白名单"
                     self.config["mj_users"] = self.mj_users
                     write_file(self.json_path, self.config)
                 elif cmd == "r_wuser":
                     if len(args) < 1:
-                        reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的用户名称或ID或序列号")
-                        e_context["reply"] = reply
-                        e_context.action = EventAction.BREAK_PASS
-                        return
+                        return self.send("[MJ] 请输入需要移除的用户名称或ID或序列号", e_context, ReplyType.ERROR)
                     if args and args[0]:
                         if args[0].isdigit():
                             index = int(args[0]) - 1
                             if index < 0 or index >= len(self.mj_users):
-                                reply = Reply(ReplyType.ERROR, f"[MJ] 序列号[{args[0]}]不在白名单中")
-                                e_context["reply"] = reply
-                                e_context.action = EventAction.BREAK_PASS
-                                return
+                                return self.send(f"[MJ] 序列号[{args[0]}]不在白名单中", e_context, ReplyType.ERROR)
                             user_name = self.mj_users[index]['user_nickname']
                             user_id = self.mj_users[index]['user_id']
                             if user_id != "ALL_USER":
                                 del self.mj_users[index]
                                 self.config["mj_users"] = self.mj_users
                                 write_file(self.json_path, self.config)
-                                reply = Reply(ReplyType.INFO, f"[MJ] 用户[{user_name}]已从白名单中移除")
+                                reply.content = f"[MJ] 用户[{user_name}]已从白名单中移除"
                             else:
-                                reply = Reply(ReplyType.INFO, f"[MJ] 白名单已清空，目前所有用户都可以使用MJ服务")
-                            e_context["reply"] = reply
-                            e_context.action = EventAction.BREAK_PASS
-                            return
+                                reply.content = "[MJ] 白名单已清空，目前所有用户都可以使用MJ服务"
+                            return self.send(reply, e_context)
                         else:
                             user_name = args[0]
                             index = -1
@@ -578,25 +548,17 @@ class MidJourney(Plugin):
                                         "user_id": "ALL_USER",
                                         "user_nickname": "所有用户"
                                     }]
-                                    reply = Reply(ReplyType.INFO, f"[MJ] 白名单已清空，目前所有用户都可以使用MJ服务")
+                                    reply.content = "[MJ] 白名单已清空，目前所有用户都可以使用MJ服务"
                                 else:
-                                    reply = Reply(ReplyType.INFO, f"[MJ] 用户[{user_name}]已从白名单中移除")
+                                    reply.content = f"[MJ] 用户[{user_name}]已从白名单中移除"
                                 self.config["mj_users"] = self.mj_users
                                 write_file(self.json_path, self.config)
-                                e_context["reply"] = reply
-                                e_context.action = EventAction.BREAK_PASS
-                                return
+                                return self.send(reply, e_context)
                             else:
-                                reply = Reply(ReplyType.ERROR, f"[MJ] 用户[{user_name}]不在白名单中")
-                                e_context["reply"] = reply
-                                e_context.action = EventAction.BREAK_PASS
-                                return
+                                return self.send(f"[MJ] 用户[{user_name}]不在白名单中", e_context, ReplyType.ERROR)
                 else:
                     if len(args) < 1:
-                        reply = Reply(ReplyType.ERROR, "[MJ] 请输入需要设置的服务器地址")
-                        e_context["reply"] = reply
-                        e_context.action = EventAction.BREAK_PASS
-                        return
+                        return self.send("[MJ] 请输入需要设置的服务器地址", e_context, ReplyType.ERROR)
                     mj_url = args[0] if args[0] else ""
                     mj_api_secret = args[1] if len(args) > 1 else ""
                     self.mj.set_mj(mj_url, mj_api_secret)
@@ -605,11 +567,9 @@ class MidJourney(Plugin):
                     self.config["mj_url"] = mj_url
                     self.config["mj_api_secret"] = mj_api_secret
                     write_file(self.json_path, self.config)
-                    reply = Reply(ReplyType.INFO, "MJ服务设置成功\nmj_url={}\nmj_api_secret={}".format(mj_url, mj_api_secret))
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
-        
+                    reply.content = "MJ服务设置成功\nmj_url={}\nmj_api_secret={}".format(mj_url, mj_api_secret)
+                return self.send(reply, e_context)
+
         # 判断是否在运行中
         if not self.ismj:
             return
@@ -617,9 +577,9 @@ class MidJourney(Plugin):
         # 判断群组是否在白名单中
         if isgroup and (userInfo["group_name"] not in self.mj_groups) and ("ALL_GROUP" not in self.mj_groups):
             return
-        
+
         # 判断用户是否在白名单中，管理员可不在白名单中
-        if (userInfo["user_id"] not in [user["user_id"] for user in self.mj_users]) and ("ALL_USER" not in [user["user_id"] for user in self.mj_users]) and (not self.isadmin):
+        if not isgroup and (userInfo["user_id"] not in [user["user_id"] for user in self.mj_users]) and ("ALL_USER" not in [user["user_id"] for user in self.mj_users]) and (not self.isadmin):
             return
 
         # 图片
@@ -630,7 +590,7 @@ class MidJourney(Plugin):
             img_cache = None
             if sessionid in self.sessions:
                 img_cache = self.sessions[sessionid].get_cache()
-            
+
             # 识别图片
             if (not isgroup and not img_cache) or (not isgroup and not img_cache["instruct"]) or (img_cache and img_cache["instruct"] == "describe"):
                 status = self.env_detection(e_context)
@@ -640,7 +600,7 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
-            
+
             if img_cache and img_cache["instruct"] == "imagine":
                 self.env_detection(e_context)
                 prompt = img_cache["prompt"]
@@ -648,7 +608,7 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
-            
+
             if img_cache and img_cache["instruct"] == "blend":
                 self.env_detection(e_context)
                 self.sessions[sessionid].action(base64)
@@ -658,11 +618,8 @@ class MidJourney(Plugin):
                     reply = Reply(ReplyType.TEXT, f"✏  请再发送一张或多张图片")
                 else:
                     reply = Reply(ReplyType.TEXT, f"✏  您已发送{length}张图片，可以发送更多图片或者发送['{self.end_prefix[0]}']开始合成")
-            
-            e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS
-            return
 
+            return self.send(reply, e_context)
 
         if ContextType.TEXT == context.type:
             # 判断是否是指令
@@ -683,9 +640,7 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif uprefix == True:
                 status = self.env_detection(e_context)
                 if not status:
@@ -694,9 +649,7 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif pprefix == True:
                 status = self.env_detection(e_context)
                 if not status:
@@ -706,27 +659,21 @@ class MidJourney(Plugin):
                 else:
                     self.sessions[sessionid] = _imgCache(sessionid, "imagine", pq)
                     reply = Reply(ReplyType.TEXT, "✨ 垫图模式\n✏ 请再发送一张图片")
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif bprefix == True:
                 status = self.env_detection(e_context)
                 if not status:
                     return
                 self.sessions[sessionid] = _imgCache(sessionid, "blend", bq)
                 reply = Reply(ReplyType.TEXT, "✨ 混图模式\n✏ 请发送两张或多张图片，然后输入['{self.end_prefix[0]}']结束")
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif dprefix == True:
                 status = self.env_detection(e_context)
                 if not status:
                     return
                 self.sessions[sessionid] = _imgCache(sessionid, "describe", dq)
                 reply = Reply(ReplyType.TEXT, "✨ 识图模式\n✏ 请发送一张图片")
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif content.startswith("/re"):
                 status = self.env_detection(e_context)
                 if not status:
@@ -736,9 +683,7 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif eprefix == True:
                 status = self.env_detection(e_context)
                 if not status:
@@ -748,10 +693,7 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     img_cache = self.sessions[sessionid].get_cache()
                 if not img_cache:
-                    reply = Reply(ReplyType.TEXT, "请先输入指令开启绘图模式")
-                    e_context["reply"] = reply
-                    e_context.action = EventAction.BREAK_PASS
-                    return
+                    return self.send("[MJ] 请先输入指令开启绘图模式", e_context, ReplyType.ERROR)
                 base64Array = img_cache["base64Array"]
                 prompt = img_cache["prompt"]
                 length = len(base64Array)
@@ -764,9 +706,7 @@ class MidJourney(Plugin):
                     reply = Reply(ReplyType.TEXT, "✨ 混图模式\n✏ 请发送两张或多张图片方可完成混图")
                 else:
                     reply = Reply(ReplyType.TEXT, "✨ 混图模式\n✏ 请再发送一张图片方可完成混图")
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif fprefix == True:
                 status = self.env_detection(e_context)
                 if not status:
@@ -788,9 +728,7 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
+                return self.send(reply, e_context)
             elif qprefix == True:
                 status = self.env_detection(e_context)
                 if not status:
@@ -803,10 +741,17 @@ class MidJourney(Plugin):
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                return
-    
+                return self.send(reply, e_context)
+
+    def send(self, reply, e_context: EventContext, types=ReplyType.TEXT, action=EventAction.BREAK_PASS):
+        if isinstance(reply, str):
+            reply = Reply(types, reply)
+        else:
+            reply.type = types if types else ReplyType.TEXT
+        e_context["reply"] = reply
+        e_context.action = action
+        return
+
     def search_friends(self, name):
         userInfo = {
             "user_id": "",
@@ -844,7 +789,9 @@ class MidJourney(Plugin):
                     help_text += f": {info['desc']}\n"
             return help_text
 
-    def authenticate(self, userid, args, isadmin, isgroup) -> Tuple[bool, str]:
+    def authenticate(self, userInfo, args) -> Tuple[bool, str]:
+        isgroup = userInfo["isgroup"]
+        isadmin = userInfo["isadmin"]
         if isgroup:
             return False, "[MJ] 请勿在群聊中认证"
 
@@ -855,15 +802,17 @@ class MidJourney(Plugin):
             return False, "[MJ] 请输入密码"
 
         password = args[0]
-        if password == self.mj_admin_password:
-            self.mj_admin_users.append(userid)
-            return True, "[MJ] 认证成功"
-        elif password == self.temp_password:
-            self.mj_admin_users.append(userid)
-            return True, "[MJ] 认证成功，请尽快设置口令"
+        if password == self.mj_admin_password or password == self.temp_password:
+            self.mj_admin_users.append({
+                "user_id": userInfo["user_id"],
+                "user_nickname": userInfo["user_nickname"]
+            })
+            self.config["mj_admin_users"] = self.mj_admin_users
+            write_file(self.json_path, self.config)
+            return True, f"[MJ] 认证成功 {'，请尽快设置口令' if password == self.temp_password else ''}"
         else:
             return False, "[MJ] 认证失败"
-    
+
     def env_detection(self, e_context: EventContext):
         trigger_prefix = conf().get("plugin_trigger_prefix", "$")
         if not self.mj_url:
@@ -875,7 +824,7 @@ class MidJourney(Plugin):
             e_context.action = EventAction.BREAK_PASS
             return False
         return True
-    
+
     def imagine(self, prompt, base64, channel, context):
         logger.debug("[MJ] /imagine prompt={} img={}".format(prompt, base64))
         reply = None
@@ -887,7 +836,7 @@ class MidJourney(Plugin):
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
-    
+
     def up(self, id, channel, context):
         logger.debug("[MJ] /up id={}".format(id))
         reply = None
@@ -899,7 +848,7 @@ class MidJourney(Plugin):
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
-    
+
     def describe(self, base64, channel, context):
         logger.debug("[MJ] /describe img={}".format(base64))
         reply = None
@@ -913,7 +862,7 @@ class MidJourney(Plugin):
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
-    
+
     def blend(self, base64Array, dimensions, channel, context):
         logger.debug("[MJ] /blend imgList={} dimensions={}".format(base64Array, dimensions))
         reply = None
@@ -925,7 +874,7 @@ class MidJourney(Plugin):
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
-    
+
     def reroll(self, id, channel, context):
         logger.debug("[MJ] /reroll id={}".format(id))
         reply = None
@@ -937,7 +886,7 @@ class MidJourney(Plugin):
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
-    
+
     def get_f_img(self, id, channel, context, types="image"):
         status2, msg, imageUrl = self.mj.get_f_img(id)
         if status2:
@@ -957,6 +906,6 @@ class MidJourney(Plugin):
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
-    
+
     def sendMsg(self, msg, channel, context, types=ReplyType.TEXT):
         return channel._send_reply(context, channel._decorate_reply(context, Reply(types, msg)))

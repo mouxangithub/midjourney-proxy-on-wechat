@@ -3,6 +3,7 @@ import json
 import requests
 from common.log import logger
 
+
 class _mjApi:
     def __init__(self, config):
         self.headers = {
@@ -18,10 +19,10 @@ class _mjApi:
         self.describe_prefix = config['describe_prefix']
         self.queue_prefix = config['queue_prefix']
         self.end_prefix = config['end_prefix']
-    
+
     def set_user(self, user):
         self.user = user
-    
+
     def set_mj(self, mj_url, mj_api_secret):
         self.baseUrl = mj_url
         self.headers = {
@@ -29,7 +30,7 @@ class _mjApi:
         }
         if mj_api_secret:
             self.headers["mj-api-secret"] = mj_api_secret
-    
+
     def subTip(self, res):
         rj = res.json()
         if not rj:
@@ -45,7 +46,7 @@ class _mjApi:
             return True, msg, rj["result"]
         else:
             return False, rj['description'], ""
-    
+
     # 图片想象接口
     def imagine(self, prompt, base64=""):
         try:
@@ -61,7 +62,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 任务提交失败", None
-    
+
     # 放大/变换图片接口
     def simpleChange(self, content):
         try:
@@ -74,7 +75,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 任务提交失败", None
-    
+
     def reroll(self, taskId):
         try:
             url = self.baseUrl + "/mj/submit/change"
@@ -89,7 +90,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 任务提交失败", None
-    
+
     # 混合图片接口
     def blend(self, base64Array, dimensions=""):
         try:
@@ -106,7 +107,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 任务提交失败", None
-    
+
     # 识图接口
     def describe(self, base64):
         try:
@@ -119,7 +120,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 任务提交失败", None
-    
+
     # 查询提交的任务信息
     def fetch(self, id):
         try:
@@ -174,7 +175,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 查询失败", None
-    
+
     # 轮询获取任务结果
     def get_f_img(self, id):
         try:
@@ -244,7 +245,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 请求失败", ""
-    
+
     # 查询任务队列
     def task_queue(self):
         try:
@@ -285,7 +286,7 @@ class _mjApi:
         except Exception as e:
             logger.exception(e)
             return False, "❌ 查询失败"
-    
+
     def status(self, status):
         msg = ""
         if status == "SUCCESS":
@@ -299,7 +300,7 @@ class _mjApi:
         else:
             msg = "未知"
         return msg
-    
+
     def help_text(self):
         help_text = "欢迎使用MJ绘画机器人\n"
         help_text += f"这是一个AI绘画工具,只要输入想到的文字,通过人工智能产出相对应的图.\n"
