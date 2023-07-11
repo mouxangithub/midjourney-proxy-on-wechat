@@ -10,7 +10,7 @@ class _imgCache:
         self.instruct = ""
         self.prompt = ""
         self.base64Array = []
-    
+
     def get_cache(self):
         return {
             "instruct": self.instruct if self.instruct else "",

@@ -336,6 +336,9 @@ class MidJourney(Plugin):
                     send_reply(self, msg)
                     rt = ReplyType.IMAGE
                     rc = img_to_jpeg(imageUrl)
+                    if not rc:
+                        rt = ReplyType.ERROR
+                        rc = "图片下载发送失败"
             if self.sessionid in self.sessions:
                 self.sessions[self.sessionid].reset()
                 del self.sessions[self.sessionid]

@@ -117,12 +117,16 @@ def write_file(path, content):
 
 
 def img_to_jpeg(image_url):
-    image = io.BytesIO()
-    res = requests.get(image_url)
-    idata = Image.open(io.BytesIO(res.content))
-    idata = idata.convert("RGB")
-    idata.save(image, format="JPEG")
-    return image
+    try:
+        image = io.BytesIO()
+        res = requests.get(image_url)
+        idata = Image.open(io.BytesIO(res.content))
+        idata = idata.convert("RGB")
+        idata.save(image, format="JPEG")
+        return image
+    except Exception as e:
+        logger.error(e)
+        return False
 
 
 def Text(msg, e_context: EventContext):
@@ -176,6 +180,9 @@ def get_f_img(self, id, types="image"):
         elif types == "image":
             rt = ReplyType.IMAGE
             rc = img_to_jpeg(imageUrl)
+    if not rc:
+        rt = ReplyType.ERROR
+        rc = "图片下载发送失败"
     return rc, rt
 
 
