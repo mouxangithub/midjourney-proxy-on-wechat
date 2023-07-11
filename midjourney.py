@@ -130,7 +130,7 @@ ADMIN_COMMANDS = {
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.36",
+    version="1.0.37",
     author="mouxan",
     desire_priority=0
 )
@@ -637,6 +637,7 @@ class MidJourney(Plugin):
                 if not status:
                     return
                 reply = self.imagine(iq, "", channel, context)
+                logger.info("[MJ] /imagine reply={}".format(reply))
                 if sessionid in self.sessions:
                     self.sessions[sessionid].reset()
                     del self.sessions[sessionid]
@@ -746,11 +747,14 @@ class MidJourney(Plugin):
     def send(self, reply, e_context: EventContext, types=ReplyType.TEXT, action=EventAction.BREAK_PASS):
         if isinstance(reply, str):
             reply = Reply(types, reply)
-        else:
-            reply.type = types if types else ReplyType.TEXT
+        elif not reply.type and types:
+            reply.type = types
         e_context["reply"] = reply
         e_context.action = action
         return
+
+    def sendMsg(self, msg, channel, context, types=ReplyType.TEXT):
+        return channel._send_reply(context, channel._decorate_reply(context, Reply(types, msg)))
 
     def search_friends(self, name):
         userInfo = {
@@ -906,6 +910,3 @@ class MidJourney(Plugin):
         else:
             reply = Reply(ReplyType.ERROR, msg)
         return reply
-
-    def sendMsg(self, msg, channel, context, types=ReplyType.TEXT):
-        return channel._send_reply(context, channel._decorate_reply(context, Reply(types, msg)))
