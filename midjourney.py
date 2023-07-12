@@ -12,7 +12,6 @@ from typing import Tuple
 from config import conf
 from lib import itchat
 from lib.itchat.content import *
-
 from .mjapi import _mjApi
 from .mjcache import _imgCache
 from .ctext import *
@@ -23,8 +22,7 @@ from .ctext import *
     namecn="MJ绘画",
     desc="一款AI绘画工具",
     version="1.0.38",
-    author="mouxan",
-    desire_priority=0
+    author="mouxan"
 )
 class MidJourney(Plugin):
     def __init__(self):

@@ -133,7 +133,7 @@ def Text(msg, e_context: EventContext):
     return send(msg, e_context, ReplyType.TEXT)
 
 
-def Image(msg, e_context: EventContext):
+def Image_file(msg, e_context: EventContext):
     return send(msg, e_context, ReplyType.IMAGE)
 
 
