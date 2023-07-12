@@ -150,7 +150,7 @@ def Error(msg, e_context: EventContext):
 
 
 def send(reply, e_context: EventContext, types=ReplyType.TEXT, action=EventAction.BREAK_PASS):
-    if isinstance(reply, str):
+    if isinstance(reply, str) or isinstance(reply, io.IOBase):
         reply = Reply(types, reply)
     elif not reply.type and types:
         reply.type = types
