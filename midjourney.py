@@ -456,12 +456,11 @@ class MidJourney(Plugin):
                     del self.sessions[self.sessionid]
                 return Info("[MJ] 会话已清理", e_context)
             elif cmd =="g_prefix":
-                t = "[MJ] 前缀列表：\n"
+                text = "[MJ] 前缀列表：\n"
                 for key, value in self.config.items():
                     if key.endswith("_prefix"):
-                        js = json.dumps(value)
-                        t += f"{key}={js}\n"
-                return Info(t, e_context)
+                        text += f"{key}：[{'，'.join(f'{data}' for data in value)}]\n"
+                return Info(text, e_context)
             elif cmd == "s_prefix":
                 if not args or len(args) < 1 or len(args) < 2:
                     return Error("[MJ] 请输入需要前缀类名和所需要添加的前缀，例如[$s_prefix imagine_prefix /mj]", e_context)
@@ -489,6 +488,10 @@ class MidJourney(Plugin):
                 data = args[1]
                 if prefix_name not in self.config:
                     return Error(f"[MJ] 类名[{prefix_name}]不存在", e_context)
+                if len(self.config[prefix_name]) == 0:
+                    return Error(f"[MJ] 类名[{prefix_name}]列表为空", e_context)
+                if len(self.config[prefix_name]) == 1:
+                    return Error(f"[MJ] 类名[{prefix_name}]列表中只有一个元素，无法删除", e_context)
                 prefix_list = self.config[prefix_name]
                 prefix_names = ""
                 if data.isdigit():
