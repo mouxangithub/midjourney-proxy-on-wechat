@@ -8,3 +8,4 @@ config.json
 nohup.out
 tmp
 *.db
+*.json
