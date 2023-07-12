@@ -55,6 +55,28 @@
 
 Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip+端口；该插件读取不到docker-compose.yml的环境变量，所以不用去docker-compose.yml配置，具体原因回头再研究
 
+### 配置参数说明
+
+```shell
+{
+    "mj_url": "", // midjourney-proxy的服务地址
+    "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
+    "mj_tip": true, // 是否发送请求提示，让漫长的等待不会枯燥，如果嫌啰嗦可关闭，即：发送一些成功的内容
+    "mj_admin_password": "", // MJ管理员密码
+    "mj_groups": [], // 白名单群组，通过管理员指令添加
+    "mj_users": [], // 白名单用户，通过管理员指令添加
+    "mj_admin_users": [], // 认证后管理员用户，通过管理员认证
+    "imagine_prefix": "[\"/i\", \"/mj\"]", // imagine画图触发前缀
+    "fetch_prefix": "[\"/f\"]", // fetch任务查询触发前缀
+    "up_prefix": "[\"/u\"]", // up图片放大和变换触发前缀
+    "pad_prefix": "[\"/p\"]", // 垫图画图触发前缀
+    "blend_prefix": "[\"/b\"]", // 混图画图触发前缀
+    "describe_prefix": "[\"/d\"]", // 图生文触发前缀
+    "queue_prefix": "[\"/q\"]",  // 查询正在执行中任务触发前缀
+    "end_prefix": "[\"/e\"]"  // 结束存储打包发送任务（目前用于混图）触发前缀
+}
+```
+
 ### 本地运行和Docker部署
 
 新方式，直接聊天窗口配置，部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)和[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)后
@@ -66,7 +88,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 ## 第三步：#scanp扫描插件，提示发现MidJourney插件即为成功
 #scanp
 ## 第四步：输入$mj_help有提示说明插件安装成功
-## 第五步：输入$mj_admin_password 密码（未配置mj_admin_password则临时密码为123456）
+## 第五步：输入$mj_admin_password 密码（未配置mj_admin_password则临时密码为123456，认证完后请尽快输入$set_mj_admin_password进行修改）
 ## 第六步：$set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息
 ## 无需重启服务，即配即用
 ```
@@ -81,12 +103,12 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 ## 第二步：认证成功后进行安装
 #installp https://github.com/mouxangithub/midjourney.git
 ## 第三步：前往插件目录/plugins/midjourney/config.json.template如果有config.json就直接改这个文件，加入下方配置
+
 {
     "mj_url": "", // midjourney-proxy的服务地址
     "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
     "mj_tip": true, // 是否发送请求提示，让漫长的等待不会枯燥，如果嫌啰嗦可关闭，即：发送一些成功的内容
     "mj_admin_password": "", // MJ管理员密码
-    "mj_admin_users": [], // 管理员用户，同godcmd
     "imagine_prefix": "[\"/i\", \"/mj\"]", // imagine画图触发前缀
     "fetch_prefix": "[\"/f\"]", // fetch任务查询触发前缀
     "up_prefix": "[\"/u\"]", // up图片放大和变换触发前缀
