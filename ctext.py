@@ -12,17 +12,28 @@ from bridge.reply import Reply, ReplyType
 from config import conf
 from common.log import logger
 
+COMMANDS = {
+    "mj_help": {
+        "alias": ["mj_help", "MJ帮助", "MJ文档", "MJ说明", "MJ说明文档", "mj文档", "mj说明", "mj说明文档", "mj帮助", "mjhp", "mjdoc", "mjdesc", "mjhelp"],
+        "desc": "MJ帮助",
+    },
+    "mj_admin_cmd": {
+        "alias": ["mj_admin_cmd", "MJ管理员指令"],
+        "desc": "MJ管理员指令",
+    },
+    "mj_admin_password": {
+        "alias": ["mj_admin_password", "MJ管理员认证"],
+        "args": ["口令"],
+        "desc": "MJ管理员认证",
+    },
+}
+
 
 ADMIN_COMMANDS = {
     "set_mj_url": {
         "alias": ["set_mj_url", "设置MJ服务地址"],
         "args": ["服务器地址", "请求头参数"],
         "desc": "设置MJ服务地址",
-    },
-    "set_mj_admin_password": {
-        "alias": ["set_mj_admin_password"],
-        "args": ["口令"],
-        "desc": "修改MJ管理员认证口令",
     },
     "stop_mj": {
         "alias": ["stop_mj", "暂停MJ服务"],
@@ -40,14 +51,51 @@ ADMIN_COMMANDS = {
         "alias": ["clean_mj", "清空MJ缓存"],
         "desc": "清空MJ缓存",
     },
+    "g_prefix": {
+        "alias": ["g_prefix", "查询前缀"],
+        "desc": "查询前缀",
+    },
+    "s_prefix": {
+        "alias": ["s_prefix", "添加前缀"],
+        "args": ["前缀类名", "前缀"],
+        "desc": "添加前缀",
+    },
+    "r_prefix": {
+        "alias": ["r_prefix", "移除前缀"],
+        "args": ["前缀类名", "前缀或序列号"],
+        "desc": "移除前缀",
+    },
+    "set_mj_admin_password": {
+        "alias": ["set_mj_admin_password", "设置管理员口令"],
+        "args": ["口令"],
+        "desc": "修改管理员口令",
+    },
+    "g_admin_list": {
+        "alias": ["g_admin_list", "查询管理员列表"],
+        "desc": "查询管理员列表",
+    },
+    "s_admin_list": {
+        "alias": ["s_admin_list", "添加管理员"],
+        "args": ["用户ID或昵称"],
+        "desc": "添加管理员",
+    },
+    "r_admin_list": {
+        "alias": ["r_admin_list", "移除管理员"],
+        "args": ["用户ID或昵称或序列号"],
+        "desc": "移除管理员",
+    },
+    "c_admin_list": {
+        "alias": ["c_admin_list", "清空管理员"],
+        "desc": "清空管理员",
+    },
     "g_wgroup": {
         "alias": ["g_wgroup", "查询白名单群组"],
         "desc": "查询白名单群组",
     },
     "s_wgroup": {
-        "alias": ["s_wgroup", "设置白名单群组"],
+        "alias": ["s_wgroup", "添加白名单群组"],
         "args": ["群组名称"],
-        "desc": "设置白名单群组",
+        "desc": "添加白名单群组",
     },
     "r_wgroup": {
         "alias": ["r_wgroup", "移除白名单群组"],
@@ -63,9 +111,9 @@ ADMIN_COMMANDS = {
         "desc": "查询白名单用户",
     },
     "s_wuser": {
-        "alias": ["s_wuser", "设置白名单用户"],
+        "alias": ["s_wuser", "添加白名单用户"],
         "args": ["用户ID或昵称"],
-        "desc": "设置白名单用户",
+        "desc": "添加白名单用户",
     },
     "r_wuser": {
         "alias": ["r_wuser", "移除白名单用户"],
@@ -75,7 +123,43 @@ ADMIN_COMMANDS = {
     "c_wuser": {
         "alias": ["c_wuser", "清空白名单用户"],
         "desc": "清空白名单用户",
-    }
+    },
+    "g_bgroup": {
+        "alias": ["g_bgroup", "查询黑名单群组"],
+        "desc": "查询黑名单群组",
+    },
+    "s_bgroup": {
+        "alias": ["s_bgroup", "添加黑名单群组"],
+        "args": ["群组名称"],
+        "desc": "添加黑名单群组",
+    },
+    "r_bgroup": {
+        "alias": ["r_bgroup", "移除黑名单群组"],
+        "args": ["群组名称或序列号"],
+        "desc": "移除黑名单群组",
+    },
+    "c_bgroup": {
+        "alias": ["c_bgroup", "清空黑名单群组"],
+        "desc": "清空黑名单群组",
+    },
+    "g_buser": {
+        "alias": ["g_buser", "查询黑名单用户"],
+        "desc": "查询黑名单用户",
+    },
+    "s_buser": {
+        "alias": ["s_buser", "添加黑名单用户"],
+        "args": ["用户ID或昵称"],
+        "desc": "添加黑名单用户",
+    },
+    "r_buser": {
+        "alias": ["r_buser", "移除黑名单用户"],
+        "args": ["用户ID或昵称或序列号"],
+        "desc": "移除黑名单用户",
+    },
+    "c_buser": {
+        "alias": ["c_buser", "清空黑名单用户"],
+        "desc": "清空黑名单用户",
+    },
 }
 
 
@@ -222,17 +306,20 @@ def env_detection(self, e_context: EventContext):
 def get_help_text(self, **kwargs):
     if kwargs.get("verbose") != True:
         return "这是一个AI绘画工具，只要输入想到的文字，通过人工智能产出相对应的图。"
+    elif kwargs.get("admin") == True:
+        help_text = f"管理员指令：\n"
+        for cmd, info in ADMIN_COMMANDS.items():
+            alias = [self.trigger_prefix + a for a in info["alias"][:1]]
+            help_text += f"{','.join(alias)} "
+            if "args" in info:
+                args = [a for a in info["args"]]
+                help_text += f"{' '.join(args)}"
+            help_text += f": {info['desc']}\n"
+        return help_text
     else:
-        trigger_prefix = conf().get("plugin_trigger_prefix", "$")
         help_text = self.mj.help_text()
-        if ADMIN_COMMANDS and self.isadmin:
-            help_text += f"\n-----------------------------\n"
-            help_text += "管理员指令：\n"
-            for cmd, info in ADMIN_COMMANDS.items():
-                alias = [trigger_prefix + a for a in info["alias"][:1]]
-                help_text += f"{','.join(alias)} "
-                if "args" in info:
-                    args = [a for a in info["args"]]
-                    help_text += f"{' '.join(args)}"
-                help_text += f": {info['desc']}\n"
+        help_text += f"\n-----------------------------\n"
+        help_text += f"{self.trigger_prefix}mj_help：说明文档\n"
+        if self.isadmin:
+            help_text += f"{self.trigger_prefix}mj_admin_cmd：管理员指令\n"
         return help_text

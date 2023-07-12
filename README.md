@@ -34,6 +34,7 @@
 ### 通用指令
 - [x] $mj_help 说明文档
 - [x] $mj_admin_password 口令 进行管理员认证(如未配置，临时管理员密码为123456)
+- [x] $mj_admin_cmd 查询管理员指令
 
 ### 管理员指令
 - [x] $set_mj_admin_password 新口令 进行设置新密码（此方式会直接写入config.json方便重启直接使用）
@@ -41,14 +42,30 @@
 - [x] $stop_mj: 暂停MJ服务
 - [x] $enable_mj: 启用MJ服务
 - [x] $clean_mj: 清除MJ服务缓存
-- [x] $g_wgroup: 查询白名单群组
-- [x] $s_wgroup 群组名称: 设置白名单群组，群内可不加群组名称参数，默认使用该群
-- [x] $r_wgroup 群组名称或序列号: 移除白名单群组，群内可不加群组名称参数，默认使用该群
-- [x] $c_wgroup: 清空白名单群组
-- [x] $g_wuser 查询白名单用户
+- [x] $g_prefix : 查询前缀
+- [x] $s_prefix 前缀类名 前缀: 设置前缀
+- [x] $r_prefix 前缀类名 前缀或序列号: 移除前缀
+- [x] $set_mj_admin_password 口令: 修改管理员口令
+- [x] $g_admin_list : 查询管理员列表
+- [x] $s_admin_list 用户ID或昵称: 设置管理员列表
+- [x] $r_admin_list 用户ID或昵称或序列号: 移除管理员列表
+- [x] $c_admin_list : 清空管理员列表
+- [x] $g_wgroup : 查询白名单群组
+- [x] $s_wgroup 群组名称: 设置白名单群组
+- [x] $r_wgroup 群组名称或序列号: 移除白名单群组
+- [x] $c_wgroup : 清空白名单群组
+- [x] $g_wuser : 查询白名单用户
 - [x] $s_wuser 用户ID或昵称: 设置白名单用户
 - [x] $r_wuser 用户ID或昵称或序列号: 移除白名单用户
-- [x] $c_wuser: 清空白名单用户
+- [x] $c_wuser : 清空白名单用户
+- [x] $g_bgroup : 查询黑名单群组
+- [x] $s_bgroup 群组名称: 设置黑名单群组
+- [x] $r_bgroup 群组名称或序列号: 移除黑名单群组
+- [x] $c_bgroup : 清空黑名单群组
+- [x] $g_buser : 查询黑名单用户
+- [x] $s_buser 用户ID或昵称: 设置黑名单用户
+- [x] $r_buser 用户ID或昵称或序列号: 移除黑名单用户
+- [x] $c_buser : 清空黑名单用户
 
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
