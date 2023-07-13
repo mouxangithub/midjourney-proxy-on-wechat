@@ -197,6 +197,7 @@ class MidJourney(Plugin):
         context = e_context['context']
         content = context.content
         msg: ChatMessage = context["msg"]
+
         self.channel = channel
         self.context = context
         self.sessionid = context["session_id"]
