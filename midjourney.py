@@ -192,7 +192,6 @@ class MidJourney(Plugin):
         users = self.roll["mj_users"]
         busers = self.roll["mj_busers"]
         mj_admin_users = self.roll["mj_admin_users"]
-
         channel = e_context['channel']
         context = e_context['context']
         content = context.content
