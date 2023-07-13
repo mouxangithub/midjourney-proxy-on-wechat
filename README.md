@@ -147,6 +147,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 mj_url= ""
 mj_api_secret= ""
 mj_tip=True
+mj_admin_password= ""
 imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]"
 fetch_prefix="[\"/fetch\", \"/ft\"]"
 up_prefix="[\"/u\", \"/up\"]"
