@@ -21,7 +21,7 @@ from .ctext import *
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.40",
+    version="1.0.41",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -33,6 +33,7 @@ class MidJourney(Plugin):
             "mj_api_secret": "",
             "mj_tip": True,
             "mj_admin_password": "",
+            "discordapp_proxy": "",
             "imagine_prefix": [
                 "/i",
                 "/mj"
@@ -73,6 +74,7 @@ class MidJourney(Plugin):
                 "mj_api_secret": os.environ.get("mj_api_secret", ""),
                 "mj_tip": os.environ.get("mj_tip", True),
                 "mj_admin_password": os.environ.get("mj_admin_password", ""),
+                "discordapp_proxy": os.environ.get("discordapp_proxy", ""),
                 "imagine_prefix": os.environ.get("imagine_prefix", "[\"/i\", \"/mj\"]"),
                 "fetch_prefix": os.environ.get("fetch_prefix", "[\"/f\"]"),
                 "up_prefix": os.environ.get("up_prefix", "[\"/u\"]"),
@@ -97,6 +99,7 @@ class MidJourney(Plugin):
         self.mj_api_secret = gconf["mj_api_secret"]
         self.mj_tip = gconf["mj_tip"]
         self.mj_admin_password = gconf["mj_admin_password"]
+        self.discordapp_proxy = gconf["discordapp_proxy"]
 
         if not gconf["imagine_prefix"]:
             self.imagine_prefix = ["/i", "/mj"]
@@ -136,6 +139,7 @@ class MidJourney(Plugin):
             "mj_api_secret": self.mj_api_secret,
             "mj_tip": self.mj_tip,
             "mj_admin_password": self.mj_admin_password,
+            "discordapp_proxy": self.discordapp_proxy,
             "imagine_prefix": self.imagine_prefix,
             "fetch_prefix": self.fetch_prefix,
             "up_prefix": self.up_prefix,
@@ -326,7 +330,7 @@ class MidJourney(Plugin):
                 if self.mj_tip:
                     send_reply(self, msg)
                     rt = ReplyType.IMAGE
-                    rc = img_to_jpeg(imageUrl)
+                    rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
                     if not rc:
                         rt = ReplyType.ERROR
                         rc = "图片下载发送失败"
@@ -827,14 +831,17 @@ class MidJourney(Plugin):
                 if len(args) < 1:
                     return Error("[MJ] 请输入需要设置的服务器地址", e_context)
                 mj_url = args[0] if args[0] else ""
-                mj_api_secret = args[1] if len(args) > 1 else ""
+                mj_api_secret = args[1] if len(args) == 2 else ""
+                proxy = args[2] if len(args) == 3 else ""
                 self.mj_url = mj_url
                 self.mj_api_secret = mj_api_secret
+                self.discordapp_proxy = proxy
                 self.config["mj_url"] = mj_url
                 self.config["mj_api_secret"] = mj_api_secret
-                self.mj.set_mj(mj_url, mj_api_secret)
+                self.config["discordapp_proxy"] = proxy
+                self.mj.set_mj(mj_url, mj_api_secret, proxy)
                 write_file(self.json_path, self.config)
-                return Info("MJ服务设置成功\nmj_url={}\nmj_api_secret={}".format(mj_url, mj_api_secret), e_context)
+                return Info("MJ服务设置成功\nmj_url={}\nmj_api_secret={}\ndiscordapp_proxy={}".format(mj_url, mj_api_secret, proxy), e_context)
 
     def authenticate(self, userInfo, args) -> Tuple[bool, str]:
         isgroup = userInfo["isgroup"]

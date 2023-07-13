@@ -3,6 +3,7 @@
     "mj_api_secret": "",
     "mj_tip": true,
     "mj_admin_password": "",
+    "discordapp_proxy": "",
     "imagine_prefix": [
         "/i",
         "/mj"

@@ -24,6 +24,7 @@
 - [x] 可自定义添加修改各种功能prefix前缀
 - [x] 聊天窗口管理员指令可修改管理员密码，配置mj_url,mj_api_secret，暂停启用mj服务
 - [x] 聊天窗口管理员指令可增删改查白名单群组和白名单用户，从而限制用户使用，减少损耗
+- [x] 增加图片代理地址discordapp_proxy配置，解决图片本地国内无法发送的问题，可配置discordapp_proxy或配置chatgpt-on-wechat配置的proxy
 
 ## 后续计划
 - [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
@@ -38,7 +39,7 @@
 
 ### 管理员指令
 - [x] $set_mj_admin_password 新口令 进行设置新密码（此方式会直接写入config.json方便重启直接使用）
-- [x] $set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息（此方式会直接写入config.json方便重启直接使用）
+- [x] $set_mj_url mj代理地址 mj_api_secret请求参数 discordapp代理地址 进行设置MJ服务器信息（此方式会直接写入config.json方便重启直接使用）
 - [x] $stop_mj: 暂停MJ服务
 - [x] $enable_mj: 启用MJ服务
 - [x] $clean_mj: 清除MJ服务缓存
@@ -80,6 +81,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
     "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
     "mj_tip": true, // 是否发送请求提示，让漫长的等待不会枯燥，如果嫌啰嗦可关闭，即：发送一些成功的内容
     "mj_admin_password": "", // MJ管理员密码
+    "discordapp_proxy": "", // cdn.discordapp.com反代地址
     "mj_groups": [], // 白名单群组，通过管理员指令添加
     "mj_users": [], // 白名单用户，通过管理员指令添加
     "mj_admin_users": [], // 认证后管理员用户，通过管理员认证
@@ -106,7 +108,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 #scanp
 ## 第四步：输入$mj_help有提示说明插件安装成功
 ## 第五步：输入$mj_admin_password 密码（未配置mj_admin_password则临时密码为123456，认证完后请尽快输入$set_mj_admin_password进行修改）
-## 第六步：$set_mj_url mj代理地址 mj_api_secret请求参数 进行设置MJ服务器信息
+## 第六步：$set_mj_url mj代理地址 mj_api_secret请求参数 discordapp代理地址 进行设置MJ服务器信息
 ## 无需重启服务，即配即用
 ```
 
@@ -126,6 +128,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
     "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
     "mj_tip": true, // 是否发送请求提示，让漫长的等待不会枯燥，如果嫌啰嗦可关闭，即：发送一些成功的内容
     "mj_admin_password": "", // MJ管理员密码
+    "discordapp_proxy": "", // cdn.discordapp.com反代地址
     "imagine_prefix": "[\"/i\", \"/mj\"]", // imagine画图触发前缀
     "fetch_prefix": "[\"/f\"]", // fetch任务查询触发前缀
     "up_prefix": "[\"/u\"]", // up图片放大和变换触发前缀
@@ -148,6 +151,7 @@ mj_url= ""
 mj_api_secret= ""
 mj_tip=True
 mj_admin_password= ""
+discordapp_proxy= ""
 imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]"
 fetch_prefix="[\"/fetch\", \"/ft\"]"
 up_prefix="[\"/u\", \"/up\"]"

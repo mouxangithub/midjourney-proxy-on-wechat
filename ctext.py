@@ -32,7 +32,7 @@ COMMANDS = {
 ADMIN_COMMANDS = {
     "set_mj_url": {
         "alias": ["set_mj_url", "设置MJ服务地址"],
-        "args": ["服务器地址", "请求头参数"],
+        "args": ["服务器地址", "请求头参数", "discordapp代理地址"],
         "desc": "设置MJ服务地址",
     },
     "stop_mj": {
@@ -200,10 +200,16 @@ def write_file(path, content):
     return True
 
 
-def img_to_jpeg(image_url):
+def img_to_jpeg(image_url, ddproxy = ""):
     try:
         image = io.BytesIO()
-        res = requests.get(image_url)
+        proxy = conf().get("proxy", "")
+        proxies = {}
+        if proxy:
+            proxies = {"http": proxy, "https": proxy}
+        if ddproxy and image_url.startswith("https://cdn.discordapp.com"):
+            image_url = image_url.replace("https://cdn.discordapp.com", ddproxy)
+        res = requests.get(image_url, proxies=proxies, stream=True)
         idata = Image.open(io.BytesIO(res.content))
         idata = idata.convert("RGB")
         idata.save(image, format="JPEG")
@@ -260,10 +266,10 @@ def get_f_img(self, id, types="image"):
         if self.mj_tip:
             send_reply(self, msg)
             rt = ReplyType.IMAGE
-            rc = img_to_jpeg(imageUrl)
+            rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
         elif types == "image":
             rt = ReplyType.IMAGE
-            rc = img_to_jpeg(imageUrl)
+            rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
     if not rc:
         rt = ReplyType.ERROR
         rc = "图片下载发送失败"

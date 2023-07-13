@@ -9,6 +9,7 @@ class _mjApi:
         self.headers = {
             "Content-Type": "application/json",
         }
+        self.proxy = config['discordapp_proxy']
         self.baseUrl = config['mj_url']
         self.headers["mj-api-secret"] = config['mj_api_secret']
         self.imagine_prefix = config['imagine_prefix']
@@ -23,13 +24,10 @@ class _mjApi:
     def set_user(self, user):
         self.user = user
 
-    def set_mj(self, mj_url, mj_api_secret):
+    def set_mj(self, mj_url, mj_api_secret="", proxy=""):
         self.baseUrl = mj_url
-        self.headers = {
-            "Content-Type": "application/json",
-        }
-        if mj_api_secret:
-            self.headers["mj-api-secret"] = mj_api_secret
+        self.proxy = proxy
+        self.headers["mj-api-secret"] = mj_api_secret
 
     def subTip(self, res):
         rj = res.json()
@@ -164,8 +162,8 @@ class _mjApi:
             if rj['failReason']:
                 msg += f"❌ 失败原因：{rj['failReason']}\n"
             if rj['imageUrl']:
-                msg += f"🎬 图片地址: {rj['imageUrl']}\n"
-                imageUrl = rj['imageUrl']
+                imageUrl = self.get_img_url(rj['imageUrl'])
+                msg += f"🎬 图片地址: {imageUrl}\n"
             if startTime:
                 msg += f"⏱ 开始时间：{startTime}\n"
             if finishTime:
@@ -227,8 +225,8 @@ class _mjApi:
                 if ruser and ruser["user_nickname"]:
                     msg += f"🙋‍♂️ 提交人：{ruser['user_nickname']}\n"
                 if rj['imageUrl']:
-                    msg += f"🎬 图片地址: {rj['imageUrl']}\n"
-                    imageUrl = rj['imageUrl']
+                    imageUrl = self.get_img_url(rj['imageUrl'])
+                    msg += f"🎬 图片地址: {imageUrl}\n"
                 if rj['startTime']:
                     startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj['startTime']/1000))
                     msg += f"⏱ 开始时间：{startTime}\n"
@@ -274,7 +272,8 @@ class _mjApi:
                     if rj[i]['failReason']:
                         msg += f"❌ 失败原因：{rj[i]['failReason']}\n"
                     if rj[i]['imageUrl']:
-                        msg += f"🎬 图片地址: {rj[i]['imageUrl']}\n"
+                        imageUrl = self.get_img_url(rj['imageUrl'])
+                        msg += f"🎬 图片地址: {imageUrl}\n"
                     startTime = ""
                     if rj[i]['startTime']:
                         startTime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rj[i]['startTime']/1000))
@@ -300,6 +299,11 @@ class _mjApi:
         else:
             msg = "未知"
         return msg
+
+    def get_img_url(self, image_url):
+        if self.proxy and image_url.startswith("https://cdn.discordapp.com"):
+            image_url = image_url.replace("https://cdn.discordapp.com", self.proxy)
+        return image_url
 
     def help_text(self):
         help_text = "欢迎使用MJ绘画机器人\n"
