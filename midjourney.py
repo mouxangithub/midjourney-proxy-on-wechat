@@ -21,7 +21,7 @@ from .ctext import *
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.39",
+    version="1.0.40",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -202,10 +202,10 @@ class MidJourney(Plugin):
         self.sessionid = context["session_id"]
         self.isgroup = context.get("isgroup", False)
         self.isadmin = False
-        # 写入用户信息
+        # 写入用户信息，企业微信没有from_user_nickname，所以使用from_user_id代替
         self.userInfo = {
             "user_id": msg.from_user_id,
-            "user_nickname": msg.from_user_nickname,
+            "user_nickname": msg.from_user_nickname if msg.from_user_nickname else msg.from_user_id,
             "isadmin": False,
             "isgroup": self.isgroup,
         }
@@ -216,7 +216,7 @@ class MidJourney(Plugin):
             self.userInfo["user_nickname"] = msg.actual_user_nickname
 
         # 判断是否是管理员
-        if self.userInfo["user_id"] in [user["user_id"] for user in mj_admin_users]:
+        if self.userInfo["user_nickname"] in [user["user_nickname"] for user in mj_admin_users]:
             self.isadmin = True
             self.userInfo['isadmin'] = True
 
@@ -238,11 +238,11 @@ class MidJourney(Plugin):
             return
 
         # 判断用户是否在白名单中，管理员可不在白名单中
-        if not self.isgroup and (self.userInfo["user_id"] not in [user["user_id"] for user in users]) and len(users) > 0 and (not self.isadmin):
+        if not self.isgroup and (self.userInfo["user_nickname"] not in [user["user_nickname"] for user in users]) and len(users) > 0 and (not self.isadmin):
             return
 
         # 判断用户是否在黑名单中
-        if not self.isgroup and (self.userInfo["user_id"] in [user["user_id"] for user in busers]):
+        if not self.isgroup and (self.userInfo["user_nickname"] in [user["user_nickname"] for user in busers]):
             return
 
         # 图片

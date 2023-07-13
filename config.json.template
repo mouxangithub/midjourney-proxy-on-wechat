@@ -3,17 +3,6 @@
     "mj_api_secret": "",
     "mj_tip": true,
     "mj_admin_password": "",
-    "mj_type": "all",
-    "mj_groups": [
-        "ALL_GROUP"
-    ],
-    "mj_users": [
-        {
-            "user_id": "ALL_USER",
-            "user_nickname": "所有用户"
-        }
-    ],
-    "mj_admin_users": [],
     "imagine_prefix": [
         "/i",
         "/mj"
