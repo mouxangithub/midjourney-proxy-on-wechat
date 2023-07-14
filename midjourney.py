@@ -328,7 +328,7 @@ class MidJourney(Plugin):
                 rt = ReplyType.ERROR
             if status and imageUrl:
                 if self.mj_tip:
-                    send_reply(self, msg, e_context['context'])
+                    send_reply(msg, e_context)
                     rt = ReplyType.IMAGE
                     rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
                     if not rc:
@@ -891,11 +891,28 @@ class MidJourney(Plugin):
         status, msg, id = self.mj.reroll(id)
         return self._reply(status, msg, id, e_context)
 
-    def _reply(self, status, msg, id, e_context: EventContext, rtype="image"):
+    def _reply(self, status, msg, id, e_context: EventContext, reply_type="image"):
         if status:
             if self.mj_tip:
-                send_reply(self, msg, e_context['context'])
-            rc, rt = get_f_img(self, id, rtype, e_context['context'])
+                send_reply(msg, e_context)
+            rc, rt = self.get_f_img(id, e_context, reply_type)
             return send(rc, e_context, rt)
         else:
             return Error(msg, e_context)
+
+    def get_f_img(self, id, e_context: EventContext, reply_type="image"):
+        status, msg, imageUrl = self.mj.get_f_img(id)
+        rt = ReplyType.TEXT
+        rc = msg
+        if not status:
+            rt = ReplyType.ERROR
+        if status and imageUrl:
+            if self.mj_tip or reply_type == "image":
+                if self.mj_tip:
+                    send_reply(msg, e_context)
+                rt = ReplyType.IMAGE
+                rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
+        if not rc:
+            rt = ReplyType.ERROR
+            rc = "图片下载发送失败"
+        return rc, rt

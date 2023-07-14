@@ -239,42 +239,47 @@ def Error(msg, e_context: EventContext):
     return send(msg, e_context, ReplyType.ERROR)
 
 
-def send(reply, e_context: EventContext, types=ReplyType.TEXT, action=EventAction.BREAK_PASS):
-    if isinstance(reply, str) or isinstance(reply, io.IOBase):
-        reply = Reply(types, reply)
-    elif not reply.type and types:
-        reply.type = types
+def send(reply, e_context: EventContext, reply_type=ReplyType.TEXT, action=EventAction.BREAK_PASS):
+    if isinstance(reply, Reply):
+        if not reply.type and reply_type:
+            reply.type = reply_type
+    else:
+        reply = Reply(reply_type, reply)
     e_context["reply"] = reply
     e_context.action = action
     return
 
 
-def send_reply(self, msg="", context = "", types=ReplyType.TEXT):
-    context = context if context else self.context
-    channel = self.channel
-    reply = channel._decorate_reply(context, Reply(types, msg))
-    return channel._send_reply(context, reply)
+def Textr(msg, e_context: EventContext):
+    return send_reply(msg, e_context, ReplyType.TEXT)
 
 
-def get_f_img(self, id, types="image", context = ""):
-    status, msg, imageUrl = self.mj.get_f_img(id)
-    rt = ReplyType.TEXT
-    rc = msg
-    context = context if context else self.context
-    if not status:
-        rt = ReplyType.ERROR
-    if status and imageUrl:
-        if self.mj_tip:
-            send_reply(self, msg, context)
-            rt = ReplyType.IMAGE
-            rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
-        elif types == "image":
-            rt = ReplyType.IMAGE
-            rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
-    if not rc:
-        rt = ReplyType.ERROR
-        rc = "图片下载发送失败"
-    return rc, rt
+def Image_filer(msg, e_context: EventContext):
+    return send_reply(msg, e_context, ReplyType.IMAGE)
+
+
+def Image_url_reply(msg, e_context: EventContext):
+    return send_reply(msg, e_context, ReplyType.IMAGE_URL)
+
+
+def Info_reply(msg, e_context: EventContext):
+    return send_reply(msg, e_context, ReplyType.INFO)
+
+
+def Error_reply(msg, e_context: EventContext):
+    return send_reply(msg, e_context, ReplyType.ERROR)
+
+
+def send_reply(reply, e_context: EventContext, reply_type=ReplyType.TEXT):
+    if isinstance(reply, Reply):
+        if not reply.type and reply_type:
+            reply.type = reply_type
+    else:
+        reply = Reply(reply_type, reply)
+    channel = e_context['channel']
+    context = e_context['context']
+    rd = channel._decorate_reply(context, reply)
+    return channel._send_reply(context, rd)
 
 
 def search_friends(name):

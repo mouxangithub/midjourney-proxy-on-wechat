@@ -272,7 +272,7 @@ class _mjApi:
                     if rj[i]['failReason']:
                         msg += f"❌ 失败原因：{rj[i]['failReason']}\n"
                     if rj[i]['imageUrl']:
-                        imageUrl = self.get_img_url(rj['imageUrl'])
+                        imageUrl = self.get_img_url(rj[i]['imageUrl'])
                         msg += f"🎬 图片地址: {imageUrl}\n"
                     startTime = ""
                     if rj[i]['startTime']:
