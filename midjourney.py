@@ -21,7 +21,7 @@ from .ctext import *
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.41",
+    version="1.0.42",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -328,7 +328,7 @@ class MidJourney(Plugin):
                 rt = ReplyType.ERROR
             if status and imageUrl:
                 if self.mj_tip:
-                    send_reply(self, msg)
+                    send_reply(self, msg, e_context['context'])
                     rt = ReplyType.IMAGE
                     rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
                     if not rc:
@@ -894,8 +894,8 @@ class MidJourney(Plugin):
     def _reply(self, status, msg, id, e_context: EventContext, rtype="image"):
         if status:
             if self.mj_tip:
-                send_reply(self, msg)
-            rc, rt = get_f_img(self, id, rtype)
+                send_reply(self, msg, e_context['context'])
+            rc, rt = get_f_img(self, id, rtype, e_context['context'])
             return send(rc, e_context, rt)
         else:
             return Error(msg, e_context)

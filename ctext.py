@@ -249,22 +249,23 @@ def send(reply, e_context: EventContext, types=ReplyType.TEXT, action=EventActio
     return
 
 
-def send_reply(self, msg="", types=ReplyType.TEXT):
-    context = self.context
+def send_reply(self, msg="", context = "", types=ReplyType.TEXT):
+    context = context if context else self.context
     channel = self.channel
     reply = channel._decorate_reply(context, Reply(types, msg))
     return channel._send_reply(context, reply)
 
 
-def get_f_img(self, id, types="image"):
+def get_f_img(self, id, types="image", context = ""):
     status, msg, imageUrl = self.mj.get_f_img(id)
     rt = ReplyType.TEXT
     rc = msg
+    context = context if context else self.context
     if not status:
         rt = ReplyType.ERROR
     if status and imageUrl:
         if self.mj_tip:
-            send_reply(self, msg)
+            send_reply(self, msg, context)
             rt = ReplyType.IMAGE
             rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
         elif types == "image":
