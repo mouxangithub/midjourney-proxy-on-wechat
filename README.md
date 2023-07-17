@@ -100,6 +100,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
 
 最终都会在插件目录下重新生成一个config.json文件，方便以后重启进行读取，当然重启的时候env环境变量依然会优先读取写入
 
+
 ### 本地运行和Docker部署
 
 新方式，直接聊天窗口配置，部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)和[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)后
