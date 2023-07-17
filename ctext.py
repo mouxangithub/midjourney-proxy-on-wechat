@@ -270,17 +270,17 @@ def Error_reply(msg, e_context: EventContext):
     return send_reply(msg, e_context, ReplyType.ERROR)
 
 
-def send_reply(reply, e_context: EventContext, reply_type=ReplyType.TEXT, action=EventAction.BREAK_PASS):
+def send_reply(reply, e_context: EventContext, reply_type=ReplyType.TEXT):
     if isinstance(reply, Reply):
         if not reply.type and reply_type:
             reply.type = reply_type
     else:
         reply = Reply(reply_type, reply)
-    e_context.action = action
     channel = e_context['channel']
     context = e_context['context']
-    logger.info(f"e_context: {e_context.is_pass()}")
+    # reply的包装步骤
     rd = channel._decorate_reply(context, reply)
+    # reply的发送步骤
     return channel._send_reply(context, rd)
 
 
