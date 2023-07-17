@@ -251,17 +251,17 @@ class MidJourney(Plugin):
             return
 
         # 图片
-        if ContextType.IMAGE == context.type:
+        if context.type == ContextType.IMAGE:
             # 需要调用准备函数下载图片，否则会出错
             msg.prepare()
             return self.handle_image(e_context)
+
         # 文字
-        elif ContextType.TEXT == context.type:
+        if context.type == ContextType.TEXT:
             # 判断是否是指令
             return self.handle_text(e_context)
 
-    def get_help_text(self, **kwargs):
-        return get_help_text(self, **kwargs)
+    get_help_text = lambda self, **kwargs: get_help_text(self, **kwargs)
 
     def handle_text(self, e_context: EventContext):
         context = e_context['context']
@@ -417,7 +417,7 @@ class MidJourney(Plugin):
             elif cmd == "mj_admin_cmd":
                 if self.isadmin == False:
                     return Error("[MJ] 您没有权限执行该操作，请先进行管理员认证", e_context)
-                return Info(get_help_text(self, verbose=True, admin=True), e_context)
+                return Info(get_help_text(self, verbose=True, isadmin=True), e_context)
             elif cmd == "mj_admin_password":
                 ok, result = self.authenticate(self.userInfo, args)
                 if not ok:

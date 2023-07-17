@@ -334,6 +334,7 @@ def get_help_text(self, **kwargs):
         help_text = self.mj.help_text()
         help_text += f"\n-----------------------------\n"
         help_text += f"{self.trigger_prefix}mj_help：说明文档\n"
-        if self.isadmin:
+        is_admin = getattr(self, 'isadmin', False)
+        if is_admin:
             help_text += f"{self.trigger_prefix}mj_admin_cmd：管理员指令\n"
         return help_text
