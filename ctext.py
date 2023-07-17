@@ -270,14 +270,16 @@ def Error_reply(msg, e_context: EventContext):
     return send_reply(msg, e_context, ReplyType.ERROR)
 
 
-def send_reply(reply, e_context: EventContext, reply_type=ReplyType.TEXT):
+def send_reply(reply, e_context: EventContext, reply_type=ReplyType.TEXT, action=EventAction.BREAK_PASS):
     if isinstance(reply, Reply):
         if not reply.type and reply_type:
             reply.type = reply_type
     else:
         reply = Reply(reply_type, reply)
+    e_context.action = action
     channel = e_context['channel']
     context = e_context['context']
+    logger.info(f"e_context: {e_context.is_pass()}")
     rd = channel._decorate_reply(context, reply)
     return channel._send_reply(context, rd)
 
