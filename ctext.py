@@ -1,5 +1,6 @@
 # encoding:utf-8
 import os
+import re
 import io
 import json
 import base64
@@ -163,6 +164,24 @@ ADMIN_COMMANDS = {
 }
 
 
+def is_domain_name(string):
+    pattern = r"^(?:https?://)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:/.*)?$"
+    match = re.match(pattern, string)
+    return match is not None
+
+
+def add_http_prefix(string):
+    if not string.startswith("http://") and not string.startswith("https://"):
+        return "http://" + string
+    return string
+
+
+def remove_suffix(string, suffix):
+    if string.endswith(suffix):
+        return string[:len(string)-len(suffix)]
+    return string
+
+
 def check_prefix_list(content, config):
     for key, value in config.items():
         if key.endswith("_prefix"):
@@ -306,7 +325,7 @@ def search_friends(name):
 
 def env_detection(self, e_context: EventContext):
     trigger_prefix = conf().get("plugin_trigger_prefix", "$")
-    if not self.mj_url:
+    if not self.config["mj_url"]:
         if self.isadmin:
             reply = Reply(ReplyType.ERROR, f"未设置[mj_url]，请输入{trigger_prefix}set_mj_url+服务器地址+请求头参数进行设置。")
         else:

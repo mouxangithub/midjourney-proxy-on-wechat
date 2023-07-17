@@ -64,28 +64,38 @@ class MidJourney(Plugin):
         # 读取和写入配置文件
         curdir = os.path.dirname(__file__)
         self.json_path = os.path.join(curdir, "config.json")
-        if not os.path.exists(self.json_path):
-            config_path = os.path.join(curdir, "config.json.template")
+        self.roll_path = os.path.join(curdir, "roll.json")
+        tm_path = os.path.join(curdir, "config.json.template")
+
+        env = {}
+        for key in gconf.keys():
+            if os.environ.get(key, None):
+                env[key] = os.environ.get(key)
+                break
+
+        jld = {}
+        if os.path.exists(self.json_path):
+            # 读取config.json配置文件
+            jld = json.loads(read_file(self.json_path))
+        elif os.path.exists(tm_path):
+            # 读取config.json.template配置文件
+            jld = json.loads(read_file(tm_path))
+
+        gconf = {**gconf, **jld, **env}
+
+        if is_domain_name(gconf["mj_url"]):
+            gconf["mj_url"] = add_http_prefix(gconf["mj_url"])
+            gconf["mj_url"] = remove_suffix(gconf["mj_url"], "/mj")
         else:
-            config_path = self.json_path
-        if os.environ.get("mj_url", None):
-            gconf = {
-                "mj_url": os.environ.get("mj_url", ""),
-                "mj_api_secret": os.environ.get("mj_api_secret", ""),
-                "mj_tip": os.environ.get("mj_tip", True),
-                "mj_admin_password": os.environ.get("mj_admin_password", ""),
-                "discordapp_proxy": os.environ.get("discordapp_proxy", ""),
-                "imagine_prefix": os.environ.get("imagine_prefix", "[\"/i\", \"/mj\"]"),
-                "fetch_prefix": os.environ.get("fetch_prefix", "[\"/f\"]"),
-                "up_prefix": os.environ.get("up_prefix", "[\"/u\"]"),
-                "pad_prefix": os.environ.get("pad_prefix", "[\"/p\"]"),
-                "blend_prefix": os.environ.get("blend_prefix", "[\"/b\"]"),
-                "describe_prefix": os.environ.get("describe_prefix", "[\"/d\"]"),
-                "queue_prefix": os.environ.get("queue_prefix", "[\"/q\"]"),
-                "end_prefix": os.environ.get("end_prefix", "[\"/e\"]")
-            }
-        else:
-            gconf = {**gconf, **json.loads(read_file(config_path))}
+            logger.info("[MJ] 请配置合法域名")
+            gconf["mj_url"] = ""
+
+        if gconf["discordapp_proxy"]:
+            if is_domain_name(gconf["discordapp_proxy"]):
+                gconf["discordapp_proxy"] = add_http_prefix(gconf["discordapp_proxy"])
+            else:
+                logger.info("[MJ] 请配置合法代理地址")
+                gconf["discordapp_proxy"] = ""
 
         if gconf["mj_admin_password"] == "":
             self.temp_password = "123456"
@@ -93,64 +103,17 @@ class MidJourney(Plugin):
         else:
             self.temp_password = None
 
-        logger.info("[MJ] config={}".format(gconf))
+        # 读取和写入配置文件
+        for key, value in gconf.items():
+            if key.endswith("_prefix"):
+                gconf[key] = eval(value) if isinstance(value, str) else value
 
-        self.mj_url = gconf["mj_url"]
-        self.mj_api_secret = gconf["mj_api_secret"]
-        self.mj_tip = gconf["mj_tip"]
-        self.mj_admin_password = gconf["mj_admin_password"]
-        self.discordapp_proxy = gconf["discordapp_proxy"]
+        self.config = gconf
 
-        if not gconf["imagine_prefix"]:
-            self.imagine_prefix = ["/i", "/mj"]
-        else:
-            self.imagine_prefix = eval(gconf["imagine_prefix"]) if isinstance(gconf["imagine_prefix"], str) else gconf["imagine_prefix"]
-        if not gconf["fetch_prefix"]:
-            self.fetch_prefix = ["/f"]
-        else:
-            self.fetch_prefix = eval(gconf["fetch_prefix"]) if isinstance(gconf["fetch_prefix"], str) else gconf["fetch_prefix"]
-        if not gconf["up_prefix"]:
-            self.up_prefix = ["/u"]
-        else:
-            self.up_prefix = eval(gconf["up_prefix"]) if isinstance(gconf["up_prefix"], str) else gconf["up_prefix"]
-        if not gconf["pad_prefix"]:
-            self.pad_prefix = ["/p"]
-        else:
-            self.pad_prefix = eval(gconf["pad_prefix"]) if isinstance(gconf["pad_prefix"], str) else gconf["pad_prefix"]
-        if not gconf["blend_prefix"]:
-            self.blend_prefix = ["/b"]
-        else:
-            self.blend_prefix = eval(gconf["blend_prefix"]) if isinstance(gconf["blend_prefix"], str) else gconf["blend_prefix"]
-        if not gconf["describe_prefix"]:
-            self.describe_prefix = ["/d"]
-        else:
-            self.describe_prefix = eval(gconf["describe_prefix"]) if isinstance(gconf["describe_prefix"], str) else gconf["describe_prefix"]
-        if not gconf["queue_prefix"]:
-            self.queue_prefix = ["/q"]
-        else:
-            self.queue_prefix = eval(gconf["queue_prefix"]) if isinstance(gconf["queue_prefix"], str) else gconf["queue_prefix"]
-        if not gconf["end_prefix"]:
-            self.end_prefix = ["/e"]
-        else:
-            self.end_prefix = eval(gconf["end_prefix"]) if isinstance(gconf["end_prefix"], str) else gconf["end_prefix"]
+        logger.info("[MJ] config={}".format(self.config))
 
-        self.config = {
-            "mj_url": self.mj_url,
-            "mj_api_secret": self.mj_api_secret,
-            "mj_tip": self.mj_tip,
-            "mj_admin_password": self.mj_admin_password,
-            "discordapp_proxy": self.discordapp_proxy,
-            "imagine_prefix": self.imagine_prefix,
-            "fetch_prefix": self.fetch_prefix,
-            "up_prefix": self.up_prefix,
-            "pad_prefix": self.pad_prefix,
-            "blend_prefix": self.blend_prefix,
-            "describe_prefix": self.describe_prefix,
-            "queue_prefix": self.queue_prefix,
-            "end_prefix": self.end_prefix
-        }
-
-        self.roll_path = os.path.join(curdir, "roll.json")
+        # 重新写入配置文件
+        write_file(self.json_path, self.config)
 
         self.roll = {
             "mj_admin_users": [],
@@ -159,14 +122,11 @@ class MidJourney(Plugin):
             "mj_bgroups": [],
             "mj_busers": []
         }
-
         if os.path.exists(self.roll_path):
             sroll = json.loads(read_file(self.roll_path))
             self.roll = {**self.roll, **sroll}
+        # 写入用户列表
         write_file(self.roll_path, self.roll)
-
-        # 重新写入配置文件
-        write_file(self.json_path, self.config)
 
         # 目前没有设计session过期事件，这里先暂时使用过期字典
         if conf().get("expires_in_seconds"):
@@ -296,7 +256,7 @@ class MidJourney(Plugin):
             return Text(f"✨ 垫图模式\n✏ 请再发送一张图片", e_context)
         elif pn == "blend_prefix":
             self.sessions[self.sessionid] = _imgCache(self.sessionid, "blend", prompt)
-            return Text(f"✨ 混图模式\n✏ 请发送两张或多张图片，然后输入['{self.end_prefix[0]}']结束", e_context)
+            return Text(f"✨ 混图模式\n✏ 请发送两张或多张图片，然后输入['{self.config['end_prefix'][0]}']结束", e_context)
         elif pn == "describe_prefix":
             self.sessions[self.sessionid] = _imgCache(self.sessionid, "describe", prompt)
             return Text(f"✨ 识图模式\n✏ 请发送一张图片", e_context)
@@ -327,10 +287,10 @@ class MidJourney(Plugin):
             if not status:
                 rt = ReplyType.ERROR
             if status and imageUrl:
-                if self.mj_tip:
+                if self.config["mj_tip"]:
                     send_reply(msg, e_context)
                     rt = ReplyType.IMAGE
-                    rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
+                    rc = img_to_jpeg(imageUrl, self.config["discordapp_proxy"])
                     if not rc:
                         rt = ReplyType.ERROR
                         rc = "图片下载发送失败"
@@ -402,7 +362,7 @@ class MidJourney(Plugin):
             if length < 2:
                 return Text(f"✏  请再发送一张或多张图片", e_context)
             else:
-                return Text(f"✏  您已发送{length}张图片，可以发送更多图片或者发送['{self.end_prefix[0]}']开始合成", e_context)
+                return Text(f"✏  您已发送{length}张图片，可以发送更多图片或者发送['{self.config['end_prefix'][0]}']开始合成", e_context)
 
     # 指令处理
     def handle_command(self, e_context: EventContext):
@@ -429,10 +389,9 @@ class MidJourney(Plugin):
             if self.isadmin == False:
                 return Error("[MJ] 您没有权限执行该操作，请先进行管理员认证", e_context)
             if cmd == "mj_tip":
-                self.mj_tip = not self.mj_tip
-                self.config["mj_tip"] = self.mj_tip
+                self.config["mj_tip"] = not self.config["mj_tip"]
                 write_file(self.json_path, self.config)
-                return Info(f"[MJ] 提示功能已{'开启' if self.mj_tip else '关闭'}", e_context)
+                return Info(f"[MJ] 提示功能已{'开启' if self.config['mj_tip'] else '关闭'}", e_context)
             elif cmd == "set_mj_admin_password":
                 if len(args) < 1:
                     return Error("[MJ] 请输入需要设置的密码", e_context)
@@ -443,9 +402,8 @@ class MidJourney(Plugin):
                     return Error("[MJ] 密码长度不能小于6位", e_context)
                 if password == self.temp_password:
                     return Error("[MJ] 不能使用临时密码，请重新设置", e_context)
-                if password == self.mj_admin_password:
+                if password == self.config['mj_admin_password']:
                     return Error("[MJ] 新密码不能与旧密码相同", e_context)
-                self.mj_admin_password = password
                 self.config["mj_admin_password"] = password
                 write_file(self.json_path, self.config)
                 return Info("[MJ] 管理员口令设置成功", e_context)
@@ -833,9 +791,16 @@ class MidJourney(Plugin):
                 mj_url = args[0] if args[0] else ""
                 mj_api_secret = args[1] if len(args) == 2 else ""
                 proxy = args[2] if len(args) == 3 else ""
-                self.mj_url = mj_url
-                self.mj_api_secret = mj_api_secret
-                self.discordapp_proxy = proxy
+                if is_domain_name(mj_url):
+                    mj_url = add_http_prefix(mj_url)
+                    mj_url = remove_suffix(mj_url, "/mj")
+                else:
+                    return Error("[MJ] 请输入正确的服务器地址", e_context)
+                if proxy:
+                    if is_domain_name(proxy):
+                        proxy = add_http_prefix(proxy)
+                    else:
+                        return Error("[MJ] 请输入正确的代理地址", e_context)
                 self.config["mj_url"] = mj_url
                 self.config["mj_api_secret"] = mj_api_secret
                 self.config["discordapp_proxy"] = proxy
@@ -856,7 +821,7 @@ class MidJourney(Plugin):
             return False, "[MJ] 请输入密码"
 
         password = args[0]
-        if password == self.mj_admin_password or password == self.temp_password:
+        if password == self.config['mj_admin_password'] or password == self.temp_password:
             self.roll["mj_admin_users"].append({
                 "user_id": userInfo["user_id"],
                 "user_nickname": userInfo["user_nickname"]
@@ -879,7 +844,7 @@ class MidJourney(Plugin):
     def describe(self, base64, e_context: EventContext):
         logger.debug("[MJ] /describe img={}".format(base64))
         status, msg, id = self.mj.describe(base64)
-        return self._reply(status, msg, id, e_context, "text" if not self.mj_tip else "image")
+        return self._reply(status, msg, id, e_context, "text" if not self.config['mj_tip'] else "image")
 
     def blend(self, base64Array, dimensions, e_context: EventContext):
         logger.debug("[MJ] /blend imgList={} dimensions={}".format(base64Array, dimensions))
@@ -893,7 +858,7 @@ class MidJourney(Plugin):
 
     def _reply(self, status, msg, id, e_context: EventContext, reply_type="image"):
         if status:
-            if self.mj_tip:
+            if self.config["mj_tip"]:
                 send_reply(msg, e_context)
             rc, rt = self.get_f_img(id, e_context, reply_type)
             return send(rc, e_context, rt)
@@ -907,11 +872,11 @@ class MidJourney(Plugin):
         if not status:
             rt = ReplyType.ERROR
         if status and imageUrl:
-            if self.mj_tip or reply_type == "image":
-                if self.mj_tip:
+            if self.config["mj_tip"] or reply_type == "image":
+                if self.config["mj_tip"]:
                     send_reply(msg, e_context)
                 rt = ReplyType.IMAGE
-                rc = img_to_jpeg(imageUrl, self.discordapp_proxy)
+                rc = img_to_jpeg(imageUrl, self.config["discordapp_proxy"])
         if not rc:
             rt = ReplyType.ERROR
             rc = "图片下载发送失败"
