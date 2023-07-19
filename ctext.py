@@ -165,7 +165,13 @@ ADMIN_COMMANDS = {
 
 
 def is_domain_name(string):
-    pattern = r"^(?:https?://)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:/.*)?$"
+    pattern = r"^(?:(?:https?|ftp)://)?(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3})(?::\d+)?(?:\/[^\s]*)?(?:\/[^\s]*)?$"
+    match = re.match(pattern, string)
+    return match is not None
+
+
+def is_ip_port_path(string):
+    pattern = r"^(?:(?:https?|ftp)://)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?(:\d+)?(/[^\s]*)?"
     match = re.match(pattern, string)
     return match is not None
 

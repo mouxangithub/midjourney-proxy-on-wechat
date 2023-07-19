@@ -21,7 +21,7 @@ from .ctext import *
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.42",
+    version="1.0.43",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -82,8 +82,7 @@ class MidJourney(Plugin):
             jld = json.loads(read_file(tm_path))
 
         gconf = {**gconf, **jld, **env}
-
-        if is_domain_name(gconf["mj_url"]):
+        if is_domain_name(gconf["mj_url"]) or is_ip_port_path(gconf["mj_url"]):
             gconf["mj_url"] = add_http_prefix(gconf["mj_url"])
             gconf["mj_url"] = remove_suffix(gconf["mj_url"], "/mj")
         else:
@@ -91,7 +90,7 @@ class MidJourney(Plugin):
             gconf["mj_url"] = ""
 
         if gconf["discordapp_proxy"]:
-            if is_domain_name(gconf["discordapp_proxy"]):
+            if is_domain_name(gconf["discordapp_proxy"]) or is_ip_port_path(gconf["discordapp_proxy"]):
                 gconf["discordapp_proxy"] = add_http_prefix(gconf["discordapp_proxy"])
             else:
                 logger.info("[MJ] 请配置合法代理地址")
@@ -791,13 +790,13 @@ class MidJourney(Plugin):
                 mj_url = args[0] if args[0] else ""
                 mj_api_secret = args[1] if len(args) == 2 else ""
                 proxy = args[2] if len(args) == 3 else ""
-                if is_domain_name(mj_url):
+                if is_domain_name(mj_url) or is_ip_port_path(mj_url):
                     mj_url = add_http_prefix(mj_url)
                     mj_url = remove_suffix(mj_url, "/mj")
                 else:
                     return Error("[MJ] 请输入正确的服务器地址", e_context)
                 if proxy:
-                    if is_domain_name(proxy):
+                    if is_domain_name(proxy) or is_ip_port_path(proxy):
                         proxy = add_http_prefix(proxy)
                     else:
                         return Error("[MJ] 请输入正确的代理地址", e_context)
