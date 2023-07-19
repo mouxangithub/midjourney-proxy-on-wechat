@@ -27,7 +27,7 @@
 - [x] 增加图片代理地址discordapp_proxy配置，解决图片本地国内无法发送的问题，可配置discordapp_proxy或配置chatgpt-on-wechat配置的proxy
 
 ## 后续计划
-- [ ] 使用[midjourney-api]重构(https://github.com/erictik/midjourney-api)
+- [ ] 使用[midjourney-api](https://github.com/erictik/midjourney-api)重构项目的api
 - [ ] 如有其他点子可提交[issues](https://github.com/mouxangithub/midjourney/issues)
 
 
