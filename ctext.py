@@ -4,6 +4,7 @@ import re
 import io
 import json
 import base64
+import pickle
 import requests
 from PIL import Image
 from plugins import *
@@ -88,6 +89,15 @@ ADMIN_COMMANDS = {
     "c_admin_list": {
         "alias": ["c_admin_list", "清空管理员"],
         "desc": "清空管理员",
+    },
+    "s_limit": {
+        "alias": ["s_limit", "设置每日作图数限制"],
+        "args": ["限制值"],
+        "desc": "设置每日作图数限制",
+    },
+    "r_limit": {
+        "alias": ["r_limit", "清空重置用户作图数限制"],
+        "desc": "清空重置用户作图数限制",
     },
     "g_wgroup": {
         "alias": ["g_wgroup", "查询白名单群组"],
@@ -214,6 +224,18 @@ def image_to_base64(image_path):
         return f"data:image/{t};base64,{encoded_string.decode('utf-8')}"
 
 
+def read_pickle(path):
+    with open(path, "rb") as f:
+        data = pickle.load(f)
+    return data
+
+
+def write_pickle(path, content):
+    with open(path, "wb") as f:
+        pickle.dump(content, f)
+    return True
+
+
 def read_file(path):
     with open(path, mode="r", encoding="utf-8") as f:
         return f.read()
@@ -332,7 +354,7 @@ def search_friends(name):
 def env_detection(self, e_context: EventContext):
     trigger_prefix = conf().get("plugin_trigger_prefix", "$")
     if not self.config["mj_url"]:
-        if self.isadmin:
+        if self.userInfo["isadmin"]:
             reply = Reply(ReplyType.ERROR, f"未设置[mj_url]，请输入{trigger_prefix}set_mj_url+服务器地址+请求头参数进行设置。")
         else:
             reply = Reply(ReplyType.ERROR, "未设置[mj_url]，请联系管理员进行设置。")

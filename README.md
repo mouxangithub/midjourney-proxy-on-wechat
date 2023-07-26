@@ -25,6 +25,7 @@
 - [x] 聊天窗口管理员指令可修改管理员密码，配置mj_url,mj_api_secret，暂停启用mj服务
 - [x] 聊天窗口管理员指令可增删改查白名单群组和白名单用户，从而限制用户使用，减少损耗
 - [x] 增加图片代理地址discordapp_proxy配置，解决图片本地国内无法发送的问题，可配置discordapp_proxy或配置chatgpt-on-wechat配置的proxy
+- [x] 新增每日图片上限，限制普通用户每日作图数，管理员和白名单用户不受限（daily_limit）
 
 ## 后续计划
 - [ ] 使用[midjourney-api](https://github.com/erictik/midjourney-api)重构项目的api服务
@@ -82,6 +83,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
     "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
     "mj_tip": true, // 是否发送请求提示，让漫长的等待不会枯燥，如果嫌啰嗦可关闭，即：发送一些成功的内容
     "mj_admin_password": "", // MJ管理员密码
+    "daily_limit": 3, // 普通用户每日作图数
     "discordapp_proxy": "", // cdn.discordapp.com反代地址
     "mj_groups": [], // 白名单群组，通过管理员指令添加
     "mj_users": [], // 白名单用户，通过管理员指令添加
@@ -134,6 +136,7 @@ Tips：部署midjourney-proxy后，下方mj_url不需要带/mj，只需域名/ip
     "mj_api_secret": "", // midjourney-proxy的api请求头，如果midjourney-proxy没配置此处可以不配
     "mj_tip": true, // 是否发送请求提示，让漫长的等待不会枯燥，如果嫌啰嗦可关闭，即：发送一些成功的内容
     "mj_admin_password": "", // MJ管理员密码
+    "daily_limit": 3, // 普通用户每日作图数
     "discordapp_proxy": "", // cdn.discordapp.com反代地址
     "imagine_prefix": "[\"/i\", \"/mj\"]", // imagine画图触发前缀
     "fetch_prefix": "[\"/f\"]", // fetch任务查询触发前缀
@@ -158,6 +161,7 @@ mj_api_secret= ""
 mj_tip=True
 mj_admin_password= ""
 discordapp_proxy= ""
+daily_limit= 3
 imagine_prefix="[\"/imagine\", \"/mj\", \"/img\"]"
 fetch_prefix="[\"/fetch\", \"/ft\"]"
 up_prefix="[\"/u\", \"/up\"]"

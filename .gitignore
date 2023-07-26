@@ -9,3 +9,4 @@ nohup.out
 tmp
 *.db
 *.json
+*.pkl

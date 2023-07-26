@@ -1,5 +1,6 @@
 # encoding:utf-8
 import os
+import time
 import json
 import plugins
 from bridge.context import ContextType
@@ -21,7 +22,7 @@ from .ctext import *
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.43",
+    version="1.0.44",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -34,6 +35,7 @@ class MidJourney(Plugin):
             "mj_tip": True,
             "mj_admin_password": "",
             "discordapp_proxy": "",
+            "daily_limit": 3,
             "imagine_prefix": [
                 "/i",
                 "/mj"
@@ -64,7 +66,7 @@ class MidJourney(Plugin):
         # 读取和写入配置文件
         curdir = os.path.dirname(__file__)
         self.json_path = os.path.join(curdir, "config.json")
-        self.roll_path = os.path.join(curdir, "roll.json")
+        self.roll_path = os.path.join(curdir, "user_datas.pkl")
         tm_path = os.path.join(curdir, "config.json.template")
 
         env = {}
@@ -122,10 +124,10 @@ class MidJourney(Plugin):
             "mj_busers": []
         }
         if os.path.exists(self.roll_path):
-            sroll = json.loads(read_file(self.roll_path))
+            sroll = read_pickle(self.roll_path)
             self.roll = {**self.roll, **sroll}
         # 写入用户列表
-        write_file(self.roll_path, self.roll)
+        write_pickle(self.roll_path, self.roll)
 
         # 目前没有设计session过期事件，这里先暂时使用过期字典
         if conf().get("expires_in_seconds"):
@@ -150,63 +152,32 @@ class MidJourney(Plugin):
         ]:
             return
 
-        groups = self.roll["mj_groups"]
-        bgroups = self.roll["mj_bgroups"]
-        users = self.roll["mj_users"]
-        busers = self.roll["mj_busers"]
-        mj_admin_users = self.roll["mj_admin_users"]
-
-        channel = e_context['channel']
         context = e_context['context']
         content = context.content
         msg: ChatMessage = context["msg"]
-
-        self.channel = channel
-        self.context = context
         self.sessionid = context["session_id"]
-        self.isgroup = context.get("isgroup", False)
-        self.isadmin = False
-        # 写入用户信息，企业微信没有from_user_nickname，所以使用from_user_id代替
-        self.userInfo = {
-            "user_id": msg.from_user_id,
-            "user_nickname": msg.from_user_nickname if msg.from_user_nickname else msg.from_user_id,
-            "isadmin": False,
-            "isgroup": self.isgroup,
-        }
-        if self.isgroup:
-            self.userInfo["group_id"] = msg.from_user_id
-            self.userInfo["user_id"] = msg.actual_user_id
-            self.userInfo["group_name"] = msg.from_user_nickname
-            self.userInfo["user_nickname"] = msg.actual_user_nickname
-
-        # 判断是否是管理员
-        if self.userInfo["user_nickname"] in [user["user_nickname"] for user in mj_admin_users]:
-            self.isadmin = True
-            self.userInfo['isadmin'] = True
+        self.userInfo = self.get_user_info(e_context)
+        self.isgroup = self.userInfo["isgroup"]
 
         self.mj.set_user(json.dumps(self.userInfo))
 
         if ContextType.TEXT == context.type and content.startswith(self.trigger_prefix):
             return self.handle_command(e_context)
 
+        # 拦截非白名单黑名单群组
+        if not self.userInfo["isadmin"] and self.isgroup and not self.userInfo["iswgroup"] and self.userInfo["isbgroup"]:
+            return
+
+        # 拦截黑名单用户
+        if not self.userInfo["isadmin"] and self.userInfo["isbuser"]:
+            return
+
+        # 非管理员，非白名单用户，使用次数已用完
+        if not self.userInfo["isadmin"] and not self.userInfo["iswuser"] and not self.userInfo["limit"]:
+            return Error("[MJ] 您今日的使用次数已用完，请明日再来", e_context)
+
         # 判断是否在运行中
         if not self.ismj:
-            return
-
-        # 判断群组是否在白名单中
-        if self.isgroup and (self.userInfo["group_name"] not in groups) and len(groups) > 0:
-            return
-
-        # 判断群组是否在黑名单中
-        if self.isgroup and (self.userInfo["group_name"] in bgroups):
-            return
-
-        # 判断用户是否在白名单中，管理员可不在白名单中
-        if not self.isgroup and (self.userInfo["user_nickname"] not in [user["user_nickname"] for user in users]) and len(users) > 0 and (not self.isadmin):
-            return
-
-        # 判断用户是否在黑名单中
-        if not self.isgroup and (self.userInfo["user_nickname"] in [user["user_nickname"] for user in busers]):
             return
 
         # 图片
@@ -374,7 +345,7 @@ class MidJourney(Plugin):
             if cmd == "mj_help":
                 return Info(get_help_text(self, verbose=True), e_context)
             elif cmd == "mj_admin_cmd":
-                if self.isadmin == False:
+                if not self.userInfo["isadmin"]:
                     return Error("[MJ] 您没有权限执行该操作，请先进行管理员认证", e_context)
                 return Info(get_help_text(self, verbose=True, isadmin=True), e_context)
             elif cmd == "mj_admin_password":
@@ -385,12 +356,21 @@ class MidJourney(Plugin):
                     return Info(result, e_context)
         elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):
             cmd = next(c for c, info in ADMIN_COMMANDS.items() if cmd in info["alias"])
-            if self.isadmin == False:
+            if not self.userInfo["isadmin"]:
                 return Error("[MJ] 您没有权限执行该操作，请先进行管理员认证", e_context)
             if cmd == "mj_tip":
                 self.config["mj_tip"] = not self.config["mj_tip"]
                 write_file(self.json_path, self.config)
                 return Info(f"[MJ] 提示功能已{'开启' if self.config['mj_tip'] else '关闭'}", e_context)
+            elif cmd == "s_limit":
+                if len(args) < 1:
+                    return Error("[MJ] 请输入需要设置的数量", e_context)
+                limit = int(args[0])
+                if limit < 0:
+                    return Error("[MJ] 数量不能小于0", e_context)
+                self.config["daily_limit"] = limit
+                write_file(self.json_path, self.config)
+                return Info(f"[MJ] 每日使用次数已设置为{limit}次", e_context)
             elif cmd == "set_mj_admin_password":
                 if len(args) < 1:
                     return Error("[MJ] 请输入需要设置的密码", e_context)
@@ -480,11 +460,12 @@ class MidJourney(Plugin):
                 return Info(f"[MJ] 管理员用户\n{nameList}", e_context)
             elif cmd == "c_admin_list" and not self.isgroup:
                 self.roll["mj_admin_users"] = []
-                write_file(self.roll_path, self.roll)
+                write_pickle(self.roll_path, self.roll)
                 return Info("[MJ] 管理员用户已清空", e_context)
             elif cmd == "s_admin_list" and not self.isgroup:
                 user_name = args[0] if args and args[0] else ""
                 adminUsers = self.roll["mj_admin_users"]
+                buser = self.roll["mj_busers"]
                 if not args or len(args) < 1:
                     return Error("[MJ] 请输入需要设置的管理员名称或ID", e_context)
                 index = -1
@@ -494,6 +475,12 @@ class MidJourney(Plugin):
                         break
                 if index >= 0:
                     return Error(f"[MJ] 管理员[{adminUsers[index]['user_nickname']}]已在列表中", e_context)
+                for i, user in enumerate(buser):
+                    if user == user_name:
+                        index = i
+                        break
+                if index >= 0:
+                    return Error(f"[MJ] 用户[{user_name}]已在黑名单中，如需添加请先进行移除", e_context)
                 userInfo = {
                     "user_id": user_name,
                     "user_nickname": user_name
@@ -506,7 +493,8 @@ class MidJourney(Plugin):
                         return Error(f"[MJ] 用户[{user_name}]不存在通讯录中", e_context)
                 adminUsers.append(userInfo)
                 self.roll["mj_admin_users"] = adminUsers
-                write_file(self.roll_path, self.roll)
+                # 写入用户列表
+                write_pickle(self.roll_path, self.roll)
                 return Info(f"[MJ] 管理员[{userInfo['user_nickname']}]已添加到列表中", e_context)
             elif cmd == "r_admin_list" and not self.isgroup:
                 text = ""
@@ -521,7 +509,7 @@ class MidJourney(Plugin):
                         user_name = adminUsers[index]['user_nickname']
                         del adminUsers[index]
                         self.roll["mj_admin_users"] = adminUsers
-                        write_file(self.roll_path, self.roll)
+                        write_pickle(self.roll_path, self.roll)
                         text = f"[MJ] 管理员[{user_name}]已从列表中移除"
                     else:
                         user_name = args[0]
@@ -534,7 +522,7 @@ class MidJourney(Plugin):
                             del adminUsers[index]
                             text = f"[MJ] 管理员[{user_name}]已从列表中移除"
                             self.roll["mj_admin_users"] = adminUsers
-                            write_file(self.roll_path, self.roll)
+                            write_pickle(self.roll_path, self.roll)
                         else:
                             return Error(f"[MJ] 管理员[{user_name}]不在列表中", e_context)
                 return Info(text, e_context)
@@ -550,10 +538,11 @@ class MidJourney(Plugin):
                 return Info(text, e_context)
             elif cmd == "c_wgroup":
                 self.roll["mj_groups"] = []
-                write_file(self.roll_path, self.roll)
+                write_pickle(self.roll_path, self.roll)
                 return Info("[MJ] 群组白名单已清空", e_context)
             elif cmd == "s_wgroup":
                 groups = self.roll["mj_groups"]
+                bgroups = self.roll["mj_bgroups"]
                 if not self.isgroup and len(args) < 1:
                     return Error("[MJ] 请输入需要设置的群组名称", e_context)
                 if self.isgroup:
@@ -562,6 +551,8 @@ class MidJourney(Plugin):
                     group_name = args[0]
                 if group_name in groups:
                     return Error(f"[MJ] 群组[{group_name}]已在白名单中", e_context)
+                if group_name in bgroups:
+                    return Error(f"[MJ] 群组[{group_name}]已在黑名单中，如需添加请先进行移除", e_context)
                 # 判断是否是itchat平台，并判断group_name是否在列表中
                 if conf().get("channel_type", "wx") == "wx":
                     chatrooms = itchat.search_chatrooms(name=group_name)
@@ -569,7 +560,7 @@ class MidJourney(Plugin):
                         return Error(f"[MJ] 群组[{group_name}]不存在", e_context)
                 groups.append(group_name)
                 self.roll["mj_groups"] = groups
-                write_file(self.roll_path, self.roll)
+                write_pickle(self.roll_path, self.roll)
                 return Info(f"[MJ] 群组[{group_name}]已添加到白名单", e_context)
             elif cmd == "r_wgroup":
                 groups = self.roll["mj_groups"]
@@ -588,7 +579,7 @@ class MidJourney(Plugin):
                 if group_name in groups:
                     groups.remove(group_name)
                     self.roll["mj_groups"] = groups
-                    write_file(self.roll_path, self.roll)
+                    write_pickle(self.roll_path, self.roll)
                     return Info(f"[MJ] 群组[{group_name}]已从白名单中移除", e_context)
                 else:
                     return Error(f"[MJ] 群组[{group_name}]不在白名单中", e_context)
@@ -604,9 +595,10 @@ class MidJourney(Plugin):
                 return Info(text, e_context)
             elif cmd == "c_bgroup":
                 self.roll["mj_bgroups"] = []
-                write_file(self.roll_path, self.roll)
-                return Info("[MJ] 已清空黑名单", e_context)
+                write_pickle(self.roll_path, self.roll)
+                return Info("[MJ] 已清空黑名单群组", e_context)
             elif cmd == "s_bgroup":
+                groups = self.roll["mj_groups"]
                 bgroups = self.roll["mj_bgroups"]
                 if not self.isgroup and len(args) < 1:
                     return Error("[MJ] 请输入需要设置的群组名称", e_context)
@@ -614,6 +606,8 @@ class MidJourney(Plugin):
                     group_name = self.userInfo["group_name"]
                 if args and args[0]:
                     group_name = args[0]
+                if group_name in groups:
+                    return Error(f"[MJ] 群组[{group_name}]已在白名单中，如需添加请先进行移除", e_context)
                 if group_name in bgroups:
                     return Error(f"[MJ] 群组[{group_name}]已在黑名单中", e_context)
                 # 判断是否是itchat平台，并判断group_name是否在列表中
@@ -623,7 +617,7 @@ class MidJourney(Plugin):
                         return Error(f"[MJ] 群组[{group_name}]不存在", e_context)
                 bgroups.append(group_name)
                 self.roll["mj_bgroups"] = bgroups
-                write_file(self.roll_path, self.roll)
+                write_pickle(self.roll_path, self.roll)
                 return Info(f"[MJ] 群组[{group_name}]已添加到黑名单", e_context)
             elif cmd == "r_bgroup":
                 bgroups = self.roll["mj_bgroups"]
@@ -642,7 +636,7 @@ class MidJourney(Plugin):
                 if group_name in bgroups:
                     bgroups.remove(group_name)
                     self.roll["mj_bgroups"] = bgroups
-                    write_file(self.roll_path, self.roll)
+                    write_pickle(self.roll_path, self.roll)
                     return Info(f"[MJ] 群组[{group_name}]已从黑名单中移除", e_context)
                 else:
                     return Error(f"[MJ] 群组[{group_name}]不在黑名单中", e_context)
@@ -652,7 +646,7 @@ class MidJourney(Plugin):
                     return Info("[MJ] 黑名单用户：无", e_context)
                 else:
                     t = "\n"
-                    nameList = t.join(f'{index+1}. {data["user_nickname"]}' for index, data in enumerate(busers))
+                    nameList = t.join(f'{index+1}. {data}' for index, data in enumerate(busers))
                     return Info(f"[MJ] 黑名单用户\n{nameList}", e_context)
             elif cmd == "g_wuser" and not self.isgroup:
                 users = self.roll["mj_users"]
@@ -660,70 +654,74 @@ class MidJourney(Plugin):
                     return Info("[MJ] 白名单用户：无", e_context)
                 else:
                     t = "\n"
-                    nameList = t.join(f'{index+1}. {data["user_nickname"]}' for index, data in enumerate(users))
+                    nameList = t.join(f'{index+1}. {data}' for index, data in enumerate(users))
                     return Info(f"[MJ] 白名单用户\n{nameList}", e_context)
             elif cmd == "c_wuser":
                 self.roll["mj_users"] = []
-                write_file(self.roll_path, self.roll)
+                write_pickle(self.roll_path, self.roll)
                 return Info("[MJ] 用户白名单已清空", e_context)
             elif cmd == "c_buser":
                 self.roll["mj_busers"] = []
-                write_file(self.roll_path, self.roll)
+                write_pickle(self.roll_path, self.roll)
                 return Info("[MJ] 用户黑名单已清空", e_context)
             elif cmd == "s_wuser":
                 user_name = args[0] if args and args[0] else ""
                 users = self.roll["mj_users"]
-                if not args or len(args) < 1:
-                    return Error("[MJ] 请输入需要设置的用户名称或ID", e_context)
-                # 如果是设置所有用户，则清空白名单
-                index = -1
-                for i, user in enumerate(users):
-                    if user["user_id"] == user_name or user["user_nickname"] == user_name:
-                        index = i
-                        break
-                if index >= 0:
-                    return Error(f"[MJ] 用户[{users[index]['user_nickname']}]已在白名单中", e_context)
-                userInfo = {
-                    "user_id": user_name,
-                    "user_nickname": user_name
-                }
-                # 判断是否是itchat平台
-                if conf().get("channel_type", "wx") == "wx":
-                    userInfo = search_friends(user_name)
-                    # 判断user_name是否在列表中
-                    if not userInfo or not userInfo["user_id"]:
-                        return Error(f"[MJ] 用户[{user_name}]不存在通讯录中", e_context)
-                users.append(userInfo)
-                self.roll["mj_users"] = users
-                write_file(self.roll_path, self.roll)
-                return Info(f"[MJ] 用户[{userInfo['user_nickname']}]已添加到白名单", e_context)
-            elif cmd == "s_buser":
-                user_name = args[0] if args and args[0] else ""
                 busers = self.roll["mj_busers"]
                 if not args or len(args) < 1:
                     return Error("[MJ] 请输入需要设置的用户名称或ID", e_context)
-                # 如果是设置所有用户，则清空白名单
                 index = -1
-                for i, user in enumerate(busers):
-                    if user["user_id"] == user_name or user["user_nickname"] == user_name:
+                for i, user in enumerate(users):
+                    if user == user_name:
                         index = i
                         break
                 if index >= 0:
-                    return Error(f"[MJ] 用户[{busers[index]['user_nickname']}]已在黑名单中", e_context)
-                userInfo = {
-                    "user_id": user_name,
-                    "user_nickname": user_name
-                }
+                    return Error(f"[MJ] 用户[{user_name}]已在白名单中", e_context)
+                for i, user in enumerate(busers):
+                    if user == user_name:
+                        index = i
+                        break
+                if index >= 0:
+                    return Error(f"[MJ] 用户[{user_name}]已在黑名单中，如需添加请先移除黑名单", e_context)
                 # 判断是否是itchat平台
                 if conf().get("channel_type", "wx") == "wx":
                     userInfo = search_friends(user_name)
                     # 判断user_name是否在列表中
                     if not userInfo or not userInfo["user_id"]:
                         return Error(f"[MJ] 用户[{user_name}]不存在通讯录中", e_context)
-                busers.append(userInfo)
+                users.append(user_name)
+                self.roll["mj_users"] = users
+                write_pickle(self.roll_path, self.roll)
+                return Info(f"[MJ] 用户[{user_name}]已添加到白名单", e_context)
+            elif cmd == "s_buser":
+                user_name = args[0] if args and args[0] else ""
+                users = self.roll["mj_users"]
+                busers = self.roll["mj_busers"]
+                if not args or len(args) < 1:
+                    return Error("[MJ] 请输入需要设置的用户名称或ID", e_context)
+                index = -1
+                for i, user in enumerate(users):
+                    if user == user_name:
+                        index = i
+                        break
+                if index >= 0:
+                    return Error(f"[MJ] 用户[{user_name}]已在白名单中，如需添加请先移除白名单", e_context)
+                for i, user in enumerate(busers):
+                    if user == user_name:
+                        index = i
+                        break
+                if index >= 0:
+                    return Error(f"[MJ] 用户[{user_name}]已在黑名单中", e_context)
+                # 判断是否是itchat平台
+                if conf().get("channel_type", "wx") == "wx":
+                    userInfo = search_friends(user_name)
+                    # 判断user_name是否在列表中
+                    if not userInfo or not userInfo["user_id"]:
+                        return Error(f"[MJ] 用户[{user_name}]不存在通讯录中", e_context)
+                busers.append(user_name)
                 self.roll["mj_busers"] = busers
-                write_file(self.roll_path, self.roll)
-                return Info(f"[MJ] 用户[{userInfo['user_nickname']}]已添加到黑名单", e_context)
+                write_pickle(self.roll_path, self.roll)
+                return Info(f"[MJ] 用户[{user_name}]已添加到黑名单", e_context)
             elif cmd == "r_wuser":
                 text = ""
                 users = self.roll["mj_users"]
@@ -734,23 +732,23 @@ class MidJourney(Plugin):
                         index = int(args[0]) - 1
                         if index < 0 or index >= len(users):
                             return Error(f"[MJ] 序列号[{args[0]}]不存在", e_context)
-                        user_name = users[index]['user_nickname']
+                        user_name = users[index]
                         del users[index]
                         self.roll["mj_users"] = users
-                        write_file(self.roll_path, self.roll)
+                        write_pickle(self.roll_path, self.roll)
                         text = f"[MJ] 用户[{user_name}]已从白名单中移除"
                     else:
                         user_name = args[0]
                         index = -1
                         for i, user in enumerate(users):
-                            if user["user_nickname"] == user_name or user["user_id"] == user_name:
+                            if user == user_name:
                                 index = i
                                 break
                         if index >= 0:
                             del users[index]
                             text = f"[MJ] 用户[{user_name}]已从白名单中移除"
                             self.roll["mj_users"] = users
-                            write_file(self.roll_path, self.roll)
+                            write_pickle(self.roll_path, self.roll)
                         else:
                             return Error(f"[MJ] 用户[{user_name}]不在白名单中", e_context)
                 return Info(text, e_context)
@@ -764,23 +762,23 @@ class MidJourney(Plugin):
                         index = int(args[0]) - 1
                         if index < 0 or index >= len(busers):
                             return Error(f"[MJ] 序列号[{args[0]}]不存在", e_context)
-                        user_name = busers[index]['user_nickname']
+                        user_name = busers[index]
                         del busers[index]
                         self.roll["mj_busers"] = busers
-                        write_file(self.roll_path, self.roll)
+                        write_pickle(self.roll_path, self.roll)
                         text = f"[MJ] 用户[{user_name}]已从黑名单中移除"
                     else:
                         user_name = args[0]
                         index = -1
                         for i, user in enumerate(busers):
-                            if user["user_nickname"] == user_name or user["user_id"] == user_name:
+                            if user == user_name:
                                 index = i
                                 break
                         if index >= 0:
                             del busers[index]
                             text = f"[MJ] 用户[{user_name}]已从黑名单中移除"
                             self.roll["mj_busers"] = busers
-                            write_file(self.roll_path, self.roll)
+                            write_pickle(self.roll_path, self.roll)
                         else:
                             return Error(f"[MJ] 用户[{user_name}]不在黑名单中", e_context)
                 return Info(text, e_context)
@@ -825,7 +823,7 @@ class MidJourney(Plugin):
                 "user_id": userInfo["user_id"],
                 "user_nickname": userInfo["user_nickname"]
             })
-            write_file(self.roll_path, self.roll)
+            write_pickle(self.roll_path, self.roll)
             return True, f"[MJ] 认证成功 {'，请尽快设置口令' if password == self.temp_password else ''}"
         else:
             return False, "[MJ] 认证失败"
@@ -850,15 +848,57 @@ class MidJourney(Plugin):
         status, msg, id = self.mj.blend(base64Array, dimensions)
         return self._reply(status, msg, id, e_context)
 
+    def get_user_info(self, e_context: EventContext):
+        # 获取当前时间戳
+        current_timestamp = time.time()
+        # 将当前时间戳和给定时间戳转换为日期字符串
+        current_date = time.strftime("%Y-%m-%d", time.localtime(current_timestamp))
+        groups = self.roll["mj_groups"]
+        bgroups = self.roll["mj_bgroups"]
+        users = self.roll["mj_users"]
+        busers = self.roll["mj_busers"]
+        mj_admin_users = self.roll["mj_admin_users"]
+        context = e_context['context']
+        msg: ChatMessage = context["msg"]
+        isgroup = context.get("isgroup", False)
+        # 写入用户信息，企业微信没有from_user_nickname，所以使用from_user_id代替
+        uid = msg.from_user_id if not isgroup else msg.actual_user_id
+        uname = (msg.from_user_nickname if msg.from_user_nickname else uid) if not isgroup else msg.actual_user_nickname
+        userInfo = {
+            "user_id": uid,
+            "user_nickname": uname,
+            "isgroup": isgroup,
+            "group_id": msg.from_user_id if isgroup else "",
+            "group_name": msg.from_user_nickname if isgroup else "",
+        }
+        user_data = conf().get_user_data(uid)
+        # 判断是否是新的一天
+        if "mj_data" not in user_data or (user_data["mj_data"] and user_data["mj_data"]["time"] != current_date):
+            user_data["mj_data"] = {
+                "limit": self.config["daily_limit"],
+                "time": current_date
+            }
+        limit = user_data["mj_data"]["limit"] if "mj_data" in user_data and "limit" in user_data["mj_data"] and user_data["mj_data"]["limit"] and user_data["mj_data"]["limit"] > 0 else False
+        userInfo['limit'] = limit
+        userInfo['isadmin'] = uid in [user["user_id"] for user in mj_admin_users]
+        userInfo['iswuser'] = uname in [user["user_nickname"] for user in users]
+        userInfo['isbuser'] = uname in [user["user_nickname"] for user in busers]
+        userInfo['iswgroup'] = userInfo["group_name"] in groups
+        userInfo['isbgroup'] = userInfo["group_name"] in bgroups
+        return userInfo
+
     def reroll(self, id, e_context: EventContext):
         logger.debug("[MJ] /reroll id={}".format(id))
         status, msg, id = self.mj.reroll(id)
         return self._reply(status, msg, id, e_context)
 
     def _reply(self, status, msg, id, e_context: EventContext, reply_type="image"):
+        userInfo = self.get_user_info(e_context)
+        user_data = conf().get_user_data(userInfo['user_id'])
         if status:
             if self.config["mj_tip"]:
                 send_reply(msg, e_context)
+            user_data["mj_data"]["limit"] -= 1
             rc, rt = self.get_f_img(id, e_context, reply_type)
             return send(rc, e_context, rt)
         else:
