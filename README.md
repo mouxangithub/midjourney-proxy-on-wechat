@@ -1,5 +1,7 @@
 ## 插件描述
 
+最新版本号：`1.0.44`
+
 使用代理 MidJourney 的discord频道[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)的api在[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)进行请求绘图发送
 
 本插件依赖于[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)而开发的插件
@@ -69,6 +71,10 @@
 - [x] $s_buser 用户ID或昵称: 设置黑名单用户
 - [x] $r_buser 用户ID或昵称或序列号: 移除黑名单用户
 - [x] $c_buser : 清空黑名单用户
+
+## 一些问题说明以及解决方案
+·超时问题：首先在discord输入/info查看你的`Fast Time Remaining`快速出图时间，然后我了解到有些朋友的是某宝某鱼上租的共享账号，这类账号的特点问题就是人多使用，加上上面的快速出图时间可能用完了，造成了你提交的作图一直在排队中，针对这类问题的解决方案如下：首先将midjourney-proxy更新到最新版，然后在他的配置项里面有一个`mj.queue.timeout-minutes`配置，即为任务超时时间，默认是五分钟，由于你的是多人使用的账号，所以次数可以延长些，改到十分钟甚至更长，具体自己试试，如果是专业版的话还可以修改`mj.queue.core-size`和`mj.queue.queue-size`并发数和等待队列长度，具体参考[`MidJourney订阅级别`](https://docs.midjourney.com/docs/plans)
+
 
 ## 使用说明
 首先，先部署好[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)，具体方法教程就点击[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)前往查看文档部署，此处就不过多的粘贴复制了，敲代码敲累了，不复制了
