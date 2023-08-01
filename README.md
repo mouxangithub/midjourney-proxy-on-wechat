@@ -2,7 +2,7 @@
 
 最新版本号：`1.0.44`
 
-`打个广告，我的MJ后端服务项目也先发了一个先行版[`midjourney-api`](https://github.com/mouxangithub/midjourney-api)，由于时间方面，目前暂时还不是很完善，部署那些教程脚本都还没写`
+打个广告，我的MJ后端服务项目也先发了一个先行版[`midjourney-api`](https://github.com/mouxangithub/midjourney-api)，由于时间方面，目前暂时还不是很完善，部署那些教程脚本都还没写，后续完善些这个后端服务后，我会重新开设一个插件
 
 使用代理 MidJourney 的discord频道[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)的api在[`chatgpt-on-wechat`](https://github.com/zhayujie/chatgpt-on-wechat)进行请求绘图发送
 
