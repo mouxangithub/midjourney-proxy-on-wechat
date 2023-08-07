@@ -22,7 +22,7 @@ from .ctext import *
     name="MidJourney",
     namecn="MJ绘画",
     desc="一款AI绘画工具",
-    version="1.0.45",
+    version="1.0.46",
     author="mouxan"
 )
 class MidJourney(Plugin):
@@ -69,7 +69,8 @@ class MidJourney(Plugin):
         # 读取和写入配置文件
         curdir = os.path.dirname(__file__)
         self.json_path = os.path.join(curdir, "config.json")
-        self.roll_path = os.path.join(curdir, "user_datas.pkl")
+        self.roll_path = os.path.join(curdir, "user_info.pkl")
+        self.user_datas_path = os.path.join(curdir, "user_datas.pkl")
         tm_path = os.path.join(curdir, "config.json.template")
 
         env = {}
@@ -132,6 +133,10 @@ class MidJourney(Plugin):
         # 写入用户列表
         write_pickle(self.roll_path, self.roll)
 
+        self.user_datas = {}
+        if os.path.exists(self.user_datas_path):
+            self.user_datas = read_pickle(self.user_datas_path)
+
         # 目前没有设计session过期事件，这里先暂时使用过期字典
         if conf().get("expires_in_seconds"):
             self.sessions = ExpiredDict(conf().get("expires_in_seconds"))
@@ -174,10 +179,6 @@ class MidJourney(Plugin):
         # 拦截黑名单用户
         if not self.userInfo["isadmin"] and self.userInfo["isbuser"]:
             return
-
-        # 非管理员，非白名单用户，使用次数已用完
-        if not self.userInfo["isadmin"] and not self.userInfo["iswuser"] and not self.userInfo["limit"]:
-            return Error("[MJ] 您今日的使用次数已用完，请明日再来", e_context)
 
         # 判断是否在运行中
         if not self.ismj:
@@ -369,8 +370,16 @@ class MidJourney(Plugin):
                 if limit < 0:
                     return Error("[MJ] 数量不能小于0", e_context)
                 self.config["daily_limit"] = limit
+                for index, item in self.user_datas.items():
+                    self.user_datas[index]["limit"] = limit
+                write_pickle(self.user_datas_path, self.user_datas)
                 write_file(self.json_path, self.config)
                 return Info(f"[MJ] 每日使用次数已设置为{limit}次", e_context)
+            elif cmd == "r_limit":
+                for index, item in self.user_datas.items():
+                    self.user_datas[index]["limit"] = self.config["daily_limit"]
+                write_pickle(self.user_datas_path, self.user_datas)
+                return Info(f"[MJ] 所有用户每日使用次数已重置为{self.config['daily_limit']}次", e_context)
             elif cmd == "set_mj_admin_password":
                 if len(args) < 1:
                     return Error("[MJ] 请输入需要设置的密码", e_context)
@@ -871,14 +880,14 @@ class MidJourney(Plugin):
             "group_id": msg.from_user_id if isgroup else "",
             "group_name": msg.from_user_nickname if isgroup else "",
         }
-        user_data = conf().get_user_data(uid)
         # 判断是否是新的一天
-        if "mj_data" not in user_data or (user_data["mj_data"] and user_data["mj_data"]["time"] != current_date):
-            user_data["mj_data"] = {
+        if "mj_data" not in self.user_datas[uid] or (self.user_datas[uid]["mj_data"] and self.user_datas[uid]["mj_data"]["time"] != current_date):
+            self.user_datas[uid]["mj_data"] = {
                 "limit": self.config["daily_limit"],
                 "time": current_date
             }
-        limit = user_data["mj_data"]["limit"] if "mj_data" in user_data and "limit" in user_data["mj_data"] and user_data["mj_data"]["limit"] and user_data["mj_data"]["limit"] > 0 else False
+            write_pickle(self.user_datas_path, self.user_datas)
+        limit = self.user_datas[uid]["mj_data"]["limit"] if "mj_data" in self.user_datas[uid] and "limit" in self.user_datas[uid]["mj_data"] and self.user_datas[uid]["mj_data"]["limit"] and self.user_datas[uid]["mj_data"]["limit"] > 0 else False
         userInfo['limit'] = limit
         userInfo['isadmin'] = uid in [user["user_id"] for user in mj_admin_users]
         userInfo['iswuser'] = uname in [user["user_nickname"] for user in users]
@@ -894,11 +903,11 @@ class MidJourney(Plugin):
 
     def _reply(self, status, msg, id, e_context: EventContext, reply_type="image"):
         userInfo = self.get_user_info(e_context)
-        user_data = conf().get_user_data(userInfo['user_id'])
         if status:
             if self.config["mj_tip"]:
                 send_reply(msg, e_context)
-            user_data["mj_data"]["limit"] -= 1
+            self.user_datas[userInfo['user_id']]["mj_data"]["limit"] -= 1
+            write_pickle(self.user_datas_path, self.user_datas)
             rc, rt = self.get_f_img(id, e_context, reply_type)
             return send(rc, e_context, rt)
         else:

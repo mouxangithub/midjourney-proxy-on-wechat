@@ -353,6 +353,13 @@ def search_friends(name):
 
 def env_detection(self, e_context: EventContext):
     trigger_prefix = conf().get("plugin_trigger_prefix", "$")
+    reply = None
+    # 非管理员，非白名单用户，使用次数已用完
+    if not self.userInfo["isadmin"] and not self.userInfo["iswuser"] and not self.userInfo["limit"]:
+        reply = Reply(ReplyType.ERROR, "[MJ] 您今日的使用次数已用完，请明日再来")
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+        return False
     if not self.config["mj_url"]:
         if self.userInfo["isadmin"]:
             reply = Reply(ReplyType.ERROR, f"未设置[mj_url]，请输入{trigger_prefix}set_mj_url+服务器地址+请求头参数进行设置。")

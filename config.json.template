@@ -29,5 +29,8 @@
     ],
     "end_prefix": [
         "/e"
+    ],
+    "reroll_prefix": [
+        "/r"
     ]
 }
