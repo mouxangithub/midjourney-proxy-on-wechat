@@ -880,12 +880,19 @@ class MidJourney(Plugin):
             "group_id": msg.from_user_id if isgroup else "",
             "group_name": msg.from_user_nickname if isgroup else "",
         }
+        logger.info("[MJ] user_datas={}".format(self.user_datas))
         # 判断是否是新的一天
-        if "mj_data" not in self.user_datas[uid] or (self.user_datas[uid]["mj_data"] and self.user_datas[uid]["mj_data"]["time"] != current_date):
-            self.user_datas[uid]["mj_data"] = {
+        if uid not in self.user_datas or "mj_data" not in self.user_datas[uid] or "mj_data" not in self.user_datas[uid] or self.user_datas[uid]["mj_data"]["time"] != current_date:
+            mj_data = {
                 "limit": self.config["daily_limit"],
                 "time": current_date
             }
+            if uid in self.user_datas and self.user_datas[uid]["mj_data"]:
+                self.user_datas[uid]["mj_data"] = mj_data
+            else:
+                self.user_datas[uid] = {
+                    "mj_data": mj_data
+                }
             write_pickle(self.user_datas_path, self.user_datas)
         limit = self.user_datas[uid]["mj_data"]["limit"] if "mj_data" in self.user_datas[uid] and "limit" in self.user_datas[uid]["mj_data"] and self.user_datas[uid]["mj_data"]["limit"] and self.user_datas[uid]["mj_data"]["limit"] > 0 else False
         userInfo['limit'] = limit
