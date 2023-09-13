@@ -195,4 +195,6 @@ reroll_prefix="[\"/r\"]"
 
 详细教程在[`插件文档`](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins#readme)和[`midjourney-proxy`](https://github.com/novicezk/midjourney-proxy)有说明
 
-![Star History Chart](https://api.star-history.com/svg?repos=mouxangithub/midjourney&type=Date)
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=mouxangithub/midjourney-proxy-on-wechat&type=Date)](https://star-history.com/#mouxangithub/midjourney-proxy-on-wechat&Date)
