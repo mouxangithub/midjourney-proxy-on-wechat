@@ -880,7 +880,6 @@ class MidJourney(Plugin):
             "group_id": msg.from_user_id if isgroup else "",
             "group_name": msg.from_user_nickname if isgroup else "",
         }
-        logger.info("[MJ] user_datas={}".format(self.user_datas))
         # 判断是否是新的一天
         if uid not in self.user_datas or "mj_data" not in self.user_datas[uid] or "mj_data" not in self.user_datas[uid] or self.user_datas[uid]["mj_data"]["time"] != current_date:
             mj_data = {

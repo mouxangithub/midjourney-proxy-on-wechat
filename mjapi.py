@@ -20,6 +20,7 @@ class _mjApi:
         self.describe_prefix = config['describe_prefix']
         self.queue_prefix = config['queue_prefix']
         self.end_prefix = config['end_prefix']
+        self.reroll_prefix = config['reroll_prefix']
 
     def set_user(self, user):
         self.user = user
